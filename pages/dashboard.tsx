@@ -2,12 +2,14 @@
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
 
-const isAdmin = useAdmin()
-
 export default function Dashboard() {
+  const [mounted, setMounted] = useState(false)
   const [instances, setInstances] = useState<any[]>([])
+  const isAdmin = useAdmin()
 
   useEffect(() => {
+    setMounted(true)
+
     const load = async () => {
       const res = await fetch('/api/vultr/instances')
       const data = await res.json()
@@ -15,6 +17,9 @@ export default function Dashboard() {
     }
     load()
   }, [])
+
+  if (!mounted) return null
+  if (!isAdmin) return <p className="p-6 text-red-500">⛔ 관리자 전용 페이지입니다.</p>
 
   const getTier = (count: number) => {
     if (count === 0) return 'Free'
