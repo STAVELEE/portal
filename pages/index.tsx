@@ -1,6 +1,7 @@
 // index.tsx
 // ✅ 생성 애니메이션, 자동 라벨, 중복 방지, 삭제(관리자만)
 import { useEffect, useState } from 'react'
+import useAdmin from '../lib/useAdmin'
 
 const isAdmin = useAdmin() // 🔒 관리자 여부
 
@@ -79,7 +80,7 @@ export default function Home() {
         <div className="flex flex-wrap gap-4 mb-4">
           <select name="region" onChange={(e) => setForm({ ...form, region: e.target.value })} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
-            {regions.map(r => <option key={r.id} value={r.id}>{r.id} - {r.city}</option>)}
+            {regions.map(r => <option key={r.id} value={r.country}>{r.city}</option>)}
           </select>
 
           <select name="plan" onChange={(e) => setForm({ ...form, plan: e.target.value })} value={form.plan} className="p-2 border rounded w-64">
