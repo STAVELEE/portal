@@ -137,7 +137,6 @@ export default function Home() {
                 <th className="p-2 border">리전</th>
                 <th className="p-2 border">OS</th>
                 <th className="p-2 border">상태</th>
-                {isAdmin && <th className="p-2 border">삭제</th>}
               </tr>
             </thead>
             <tbody>
@@ -148,11 +147,6 @@ export default function Home() {
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
                   <td className="p-2 border">{ins.status}</td>
-                  {isAdmin && (
-                    <td className="p-2 border">
-                      <button onClick={() => deleteInstance(ins.id)} className="text-red-600 hover:underline">삭제</button>
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>

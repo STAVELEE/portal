@@ -55,6 +55,7 @@ export default function Dashboard() {
                   <th className="p-2 border">IP</th>
                   <th className="p-2 border">리전</th>
                   <th className="p-2 border">상태</th>
+                  {isAdmin && <th className="p-2 border">삭제</th>}
                 </tr>
               </thead>
               <tbody>
@@ -64,6 +65,11 @@ export default function Dashboard() {
                     <td className="p-2 border">{ins.main_ip}</td>
                     <td className="p-2 border">{ins.region}</td>
                     <td className="p-2 border">{ins.status}</td>
+                    {isAdmin && (
+                    <td className="p-2 border">
+                      <button onClick={() => deleteInstance(ins.id)} className="text-red-600 hover:underline">삭제</button>
+                    </td>
+                  )}
                   </tr>
                 ))}
               </tbody>
