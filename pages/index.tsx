@@ -53,7 +53,7 @@ export default function Home() {
     setError('')
     setResult(null)
 
-    let label = form.label.trim() || `stave-server-${Math.floor(1000 + Math.random() * 9000)}`
+    let label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
     const exists = instances.some((ins) => ins.label === label)
     if (exists) {
       setError('❌ 이미 존재하는 서버 이름입니다.')
