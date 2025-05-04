@@ -1,8 +1,5 @@
-// pages/admin/login.tsx
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-
-
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('')
@@ -18,7 +15,7 @@ export default function AdminLogin() {
     })
     const data = await res.json()
     if (res.ok) {
-      router.push('/')
+      router.push('/') // 로그인 후 메인 페이지로 이동
     } else {
       setError(data.error || '로그인 실패')
     }
