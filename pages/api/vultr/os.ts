@@ -3,21 +3,23 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const VULTR_API_KEY = process.env.VULTR_API_KEY
+  const apiKey = process.env.VULTR_API_KEY
 
-  if (!VULTR_API_KEY) {
-    return res.status(500).json({ error: '환경변수가 없습니다' })
+  if (!apiKey) {
+    console.error('❌ 환경변수 누락')
+    return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 없습니다.' })
   }
 
   try {
     const response = await axios.get('https://api.vultr.com/v2/regions', {
-      headers: { Authorization: `Bearer ${VULTR_API_KEY}` }
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
     })
-    res.status(200).json(response.data)
+    return res.status(200).json(response.data)
   } catch (err: any) {
-    res.status(500).json({
-      error: 'Vultr API 호출 실패',
-      detail: err.response?.data || err.message,
-    })
+    console.error('❌ Vultr API 오류:', err.response?.data || err.message)
+    return res.status(500).json({ error: 'Vultr API 실패', detail: err.response?.data || err.message })
   }
 }
