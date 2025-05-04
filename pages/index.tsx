@@ -115,10 +115,13 @@ export default function Home() {
 
           {/* 플랜 선택 (서버 타입 선택 후 활성화) */}
           <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
-          <option key={p.id} value={p.id}>
-  {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
-</option>
-          </select>
+  <option value="">플랜 선택</option>
+  {plans.map(p => (
+    <option key={p.id} value={p.id}>
+      {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
+    </option>
+  ))}
+</select>
 
           {/* OS 선택 */}
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
