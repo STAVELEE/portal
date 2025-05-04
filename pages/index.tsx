@@ -79,12 +79,29 @@ export default function Home() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
+
     const data = await res.json()
     setResult(data)
 
-    await delay(5000) // 생성 직후 대기
-    const updated = await fetch('/api/vultr/instances').then(res => res.json())
-    setInstances(updated.instances || [])
+    // 1. 생성된 서버를 목록에 임시 추가 (상태는 pending)
+    setInstances(prev => [
+      {
+        id: data.instance.id,
+        label: data.instance.label,
+        main_ip: '0.0.0.0',
+        region: data.instance.region,
+        os: data.instance.os,
+        status: 'pending'
+      },
+      ...prev
+    ])
+
+    // 2. 일정 시간 후 실제 서버 목록 갱신
+    setTimeout(async () => {
+      const updated = await fetch('/api/vultr/instances').then(res => res.json())
+      setInstances(updated.instances || [])
+    }, 5000)
+
     setLoading(false)
   }
 
@@ -170,7 +187,9 @@ export default function Home() {
                   <td className="p-2 border">{ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">{ins.status}</td>
+                  <td className="p-2 border">
+                    {ins.status === 'pending' ? '🛠️ 세팅중' : ins.status === 'active' ? '✅ 운영중' : ins.status}
+                  </td>
                 </tr>
               ))}
             </tbody>
