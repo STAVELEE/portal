@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
 
-const isAdmin = useAdmin() // 🔒 관리자 여부
+
+const isAdmin = useAdmin()
 
 export default function Home() {
   const [regions, setRegions] = useState<any[]>([])
@@ -126,7 +127,7 @@ export default function Home() {
                 <th className="p-2 border">리전</th>
                 <th className="p-2 border">OS</th>
                 <th className="p-2 border">상태</th>
-                {adminMode && <th className="p-2 border">삭제</th>}
+                {isAdmin && <th className="p-2 border">삭제</th>}
               </tr>
             </thead>
             <tbody>
@@ -137,7 +138,7 @@ export default function Home() {
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
                   <td className="p-2 border">{ins.status}</td>
-                  {adminMode && (
+                  {isAdmin && (
                     <td className="p-2 border">
                       <button
                         onClick={() => deleteInstance(ins.id)}
