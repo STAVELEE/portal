@@ -1,5 +1,7 @@
 // pages/dashboard.tsx
 import { useEffect, useState } from 'react'
+import useAdmin from '@/lib/useAdmin'
+
 const isAdmin = useAdmin()
 
 export default function Dashboard() {
