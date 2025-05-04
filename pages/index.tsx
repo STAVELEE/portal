@@ -81,7 +81,7 @@ export default function Home() {
           <option value="">플랜 선택</option>
           {plans.map(p => (
             <option key={p.id} value={p.id}>
-              {p.id} - {p.vcpu}vCPU / {p.ram}MB
+              {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
             </option>
           ))}
         </select>
