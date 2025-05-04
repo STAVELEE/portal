@@ -94,7 +94,12 @@ export default function Home() {
           {/* 리전 선택 */}
           <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
-            {regions.map(r => <option key={r.id} value={p.id}>{r.country} - {r.city}</option>)}
+            {regions.map(r => (
+  <option key={r.id} value={r.id}>
+    {r.country} - {r.city}
+  </option>
+))}
+
           </select>
 
           {/* 서버 타입 선택 (리전 선택 후 활성화) */}
