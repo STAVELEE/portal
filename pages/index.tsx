@@ -76,12 +76,7 @@ export default function Home() {
     setLoading(false)
   }
 
-  const deleteInstance = async (id: string) => {
-    if (!confirm('정말 삭제할까요?')) return
-    await fetch(`/api/vultr/delete?id=${id}`, { method: 'DELETE' })
-    const updated = await fetch('/api/vultr/instances').then(res => res.json())
-    setInstances(updated.instances || [])
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">

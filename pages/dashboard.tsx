@@ -18,6 +18,13 @@ export default function Dashboard() {
     load()
   }, [])
 
+  const deleteInstance = async (id: string) => {
+    if (!confirm('정말 삭제할까요?')) return
+    await fetch(`/api/vultr/delete?id=${id}`, { method: 'DELETE' })
+    const updated = await fetch('/api/vultr/instances').then(res => res.json())
+    setInstances(updated.instances || [])
+  }
+
   if (!mounted) return null
   if (!isAdmin) return <p className="p-6 text-red-500">⛔ 관리자 전용 페이지입니다.</p>
 
