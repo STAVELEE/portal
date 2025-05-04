@@ -2,7 +2,7 @@
 // ✅ 생성 애니메이션, 자동 라벨, 중복 방지, 삭제(관리자만)
 import { useEffect, useState } from 'react'
 
-const adminMode = true // 🔒 관리자 여부 (나중에 인증 연동)
+const isAdmin = useAdmin() // 🔒 관리자 여부
 
 export default function Home() {
   const [regions, setRegions] = useState<any[]>([])

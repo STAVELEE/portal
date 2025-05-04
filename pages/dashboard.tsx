@@ -1,5 +1,6 @@
 // pages/dashboard.tsx
 import { useEffect, useState } from 'react'
+const isAdmin = useAdmin()
 
 export default function Dashboard() {
   const [instances, setInstances] = useState<any[]>([])
