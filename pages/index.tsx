@@ -64,7 +64,6 @@ export default function Home() {
       const data = await res.json()
       setResult(data)
 
-      // 생성 후 목록 갱신
       const res2 = await fetch('/api/vultr/instances')
       const instanceData = await res2.json()
       setInstances(instanceData.instances || [])
@@ -76,82 +75,88 @@ export default function Home() {
   }
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>🌐 Vultr 서버 생성</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold text-blue-700 mb-6">🌐 Vultr 서버 생성 포털</h1>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-        <select name="region" onChange={handleChange} value={form.region}>
-          <option value="">리전 선택</option>
-          {regions.map((r) => (
-            <option key={r.id} value={r.id}>{r.id} - {r.city}</option>
-          ))}
-        </select>
+        <div className="flex flex-wrap gap-4 mb-6">
+          <select name="region" onChange={handleChange} value={form.region}
+            className="p-2 border rounded w-48 bg-white">
+            <option value="">리전 선택</option>
+            {regions.map((r) => (
+              <option key={r.id} value={r.id}>{r.id} - {r.city}</option>
+            ))}
+          </select>
 
-        <select name="plan" onChange={handleChange} value={form.plan}>
-          <option value="">플랜 선택</option>
-          {plans.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
-            </option>
-          ))}
-        </select>
+          <select name="plan" onChange={handleChange} value={form.plan}
+            className="p-2 border rounded w-64 bg-white">
+            <option value="">플랜 선택</option>
+            {plans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
+              </option>
+            ))}
+          </select>
 
-        <select name="os_id" onChange={handleChange} value={form.os_id}>
-          <option value="">OS 선택</option>
-          {oses.map((o) => (
-            <option key={o.id} value={o.id}>{o.name}</option>
-          ))}
-        </select>
+          <select name="os_id" onChange={handleChange} value={form.os_id}
+            className="p-2 border rounded w-48 bg-white">
+            <option value="">OS 선택</option>
+            {oses.map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
 
-        <input
-          type="text"
-          name="label"
-          placeholder="서버 라벨 입력"
-          value={form.label}
-          onChange={handleChange}
-        />
+          <input type="text" name="label" value={form.label} onChange={handleChange}
+            placeholder="서버 라벨 입력"
+            className="p-2 border rounded w-48 bg-white"
+          />
 
-        <button onClick={createServer} disabled={loading}>
-          {loading ? '생성 중...' : '서버 생성하기'}
-        </button>
+          <button onClick={createServer}
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+            {loading ? '생성 중...' : '서버 생성'}
+          </button>
+        </div>
+
+        {result && (
+          <div className="bg-white p-4 rounded shadow mb-6">
+            <h2 className="font-semibold mb-2">📦 생성 결과</h2>
+            <pre className="text-sm text-gray-700 overflow-x-auto">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        {instances.length > 0 && (
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="font-semibold mb-4">🖥️ 현재 서버 목록</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left border">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="p-2 border">이름</th>
+                    <th className="p-2 border">IP</th>
+                    <th className="p-2 border">리전</th>
+                    <th className="p-2 border">OS</th>
+                    <th className="p-2 border">상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {instances.map(ins => (
+                    <tr key={ins.id} className="hover:bg-gray-50">
+                      <td className="p-2 border">{ins.label}</td>
+                      <td className="p-2 border">{ins.main_ip}</td>
+                      <td className="p-2 border">{ins.region}</td>
+                      <td className="p-2 border">{ins.os}</td>
+                      <td className="p-2 border">{ins.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
-
-      {result && (
-        <div style={{ marginTop: 20 }}>
-          <h3>📦 생성 결과</h3>
-          <pre style={{ background: '#eee', padding: '1rem' }}>
-            {JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
-
-      {instances.length > 0 && (
-        <div style={{ marginTop: 40 }}>
-          <h2>🖥️ 현재 서버 목록</h2>
-          <table border={1} cellPadding={8}>
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>IP</th>
-                <th>리전</th>
-                <th>OS</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {instances.map((ins) => (
-                <tr key={ins.id}>
-                  <td>{ins.label}</td>
-                  <td>{ins.main_ip}</td>
-                  <td>{ins.region}</td>
-                  <td>{ins.os}</td>
-                  <td>{ins.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   )
 }
