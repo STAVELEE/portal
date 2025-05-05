@@ -47,14 +47,18 @@ export default function CreateServer() {
 
     let label = form.label.trim() || `server-${Math.floor(1000 + Math.random() * 9000)}`
 
-    const res = await fetch('/api/server/create', {
+    const payload = {
+      region: form.region,
+      plan: form.plan,
+      os_id: form.os_id,
+      label: form.label || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    }
+    
+    await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    
-    // ✅ 리다이렉트 추가
-    router.push('/')
     
 
     const data = await res.json()
