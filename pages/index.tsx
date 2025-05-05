@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 interface Instance {
   id: string;
@@ -11,48 +11,46 @@ interface Instance {
 }
 
 export default function ServerList() {
-  const [instances, setInstances] = useState<Instance[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const router = useRouter()
-  const newLabel = router.query.new as string | undefined
+  const [instances, setInstances] = useState<Instance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchInstances = async () => {
       try {
-        const res = await fetch('/api/vultr/instances')
-        const data = await res.json()
-        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패')
+        const res = await fetch('/api/vultr/instances');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
+        const localLabel = localStorage.getItem('creatingLabel');
+        let updated = data.instances || [];
 
-        let updated: Instance[] = data.instances || []
-
-        // ✅ 타입 명시로 빌드 에러 해결
-        if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
+        if (localLabel && !updated.some((i: Instance) => i.label === localLabel)) {
           updated = [
             {
               id: 'creating-' + Date.now(),
-              label: newLabel,
-              main_ip: '',
-              region: '',
-              os: '',
+              label: localLabel,
+              main_ip: '할당 중',
+              region: '-',
+              os: '-',
               status: '세팅 중',
             },
-            ...updated
-          ]
+            ...updated,
+          ];
         }
 
-        setInstances(updated)
+        setInstances(updated);
       } catch (err: any) {
-        setError(err.message)
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchInstances()
-    const interval = setInterval(fetchInstances, 5000)
-    return () => clearInterval(interval)
-  }, [newLabel])
+    fetchInstances();
+    const interval = setInterval(fetchInstances, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -84,11 +82,15 @@ export default function ServerList() {
               {instances.map((ins) => (
                 <tr
                   key={ins.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => router.push(`/servers/${ins.id}`)}
+                  className={`hover:bg-gray-50 ${ins.id.startsWith('creating-') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  onClick={() => {
+                    if (!ins.id.startsWith('creating-')) {
+                      router.push(`/servers/${ins.id}`);
+                    }
+                  }}
                 >
                   <td className="p-2 border">{ins.label}</td>
-                  <td className="p-2 border">{ins.main_ip || '-'}</td>
+                  <td className="p-2 border">{ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
                   <td className="p-2 border">{ins.status}</td>
@@ -99,5 +101,5 @@ export default function ServerList() {
         )}
       </div>
     </div>
-  )
+  );
 }
