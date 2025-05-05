@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
+import { filterPlansByRegion } from '../utils/filterPlansByRegion'
+
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -41,14 +43,16 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!type) return
+    if (!type || !form.region) return
     const fetchPlans = async () => {
       const res = await fetch(`/api/vultr/plans?type=${type}`)
       const data = await res.json()
-      setPlans(data.plans || [])
+      const filtered = filterPlansByRegion(data.plans || [], form.region, type)
+      setPlans(filtered)
     }
     fetchPlans()
-  }, [type])
+  }, [type, form.region])
+  
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
