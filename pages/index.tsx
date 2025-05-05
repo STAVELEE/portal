@@ -3,8 +3,8 @@ import useAdmin from '../lib/useAdmin'
 import filterPlansByRegion from '../utils/filterPlansByRegion'
 
 export default function Home() {
-  const isAdmin = useAdmin()
   const [mounted, setMounted] = useState(false)
+  const isAdmin = useAdmin()
 
   const [type, setType] = useState('')
   const [regions, setRegions] = useState<any[]>([])
@@ -14,43 +14,51 @@ export default function Home() {
 
   const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     setMounted(true)
-  }, [])
 
-  useEffect(() => {
-    const fetchOptions = async () => {
-      const [r, o] = await Promise.all([
+    const fetchInitial = async () => {
+      const [r, o, i] = await Promise.all([
         fetch('/api/vultr/regions').then(res => res.json()),
-        fetch('/api/vultr/os').then(res => res.json())
+        fetch('/api/vultr/os').then(res => res.json()),
+        fetch('/api/vultr/instances').then(res => res.json())
       ])
       setRegions(r.regions || [])
       setOses(o.os || [])
+      setInstances(i.instances || [])
     }
 
-    const loadInstances = async () => {
-      const res = await fetch('/api/vultr/instances')
-      const data = await res.json()
-      setInstances(data.instances || [])
-    }
-
-    fetchOptions()
-    loadInstances()
+    fetchInitial()
   }, [])
 
+  // 플랜 동적 로딩
   useEffect(() => {
-    if (!type) return
+    if (!type || !form.region) return
+
     const fetchPlans = async () => {
       const res = await fetch(`/api/vultr/plans?type=${type}`)
       const data = await res.json()
       const filtered = filterPlansByRegion(data.plans || [], form.region)
       setPlans(filtered)
     }
+
     fetchPlans()
-  }, [type])
+  }, [type, form.region])
+
+  // 5초마다 인스턴스 상태 polling
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch('/api/vultr/instances')
+        .then(res => res.json())
+        .then(data => setInstances(data.instances || []))
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  if (!mounted) return null
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -59,9 +67,8 @@ export default function Home() {
   const createServer = async () => {
     setLoading(true)
     setError('')
-    setResult(null)
 
-    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    let label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
     const exists = instances.some((ins) => ins.label === label)
     if (exists) {
       setError('❌ 이미 존재하는 서버 이름입니다.')
@@ -71,21 +78,15 @@ export default function Home() {
 
     const payload = { ...form, label }
 
-    const res = await fetch('/api/server/create', {
+    await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    const data = await res.json()
-    setResult(data)
 
-    // ✅ 즉시 서버 목록 갱신
-    const updated = await fetch('/api/vultr/instances').then(res => res.json())
-    setInstances(updated.instances || [])
+    setForm({ region: '', plan: '', os_id: '', label: '' })
     setLoading(false)
   }
-
-  if (!mounted) return null
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -113,15 +114,15 @@ export default function Home() {
           <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
             <option value="">플랜 선택</option>
             {plans.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
-              </option>
+              <option key={p.id} value={p.id}>{p.id} - {p.vcpu_count}vCPU / {p.ram}MB</option>
             ))}
           </select>
 
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
             <option value="">OS 선택</option>
-            {oses.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            {oses.map(o => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
           </select>
 
           <input
@@ -140,13 +141,6 @@ export default function Home() {
 
         {error && <p className="text-red-600 mb-2">{error}</p>}
 
-        {result && (
-          <div className="bg-white p-4 rounded shadow mb-6">
-            <h2 className="font-semibold mb-2">📦 생성 결과</h2>
-            <pre className="text-sm text-gray-700 overflow-x-auto">{JSON.stringify(result, null, 2)}</pre>
-          </div>
-        )}
-
         <div className="bg-white p-4 rounded shadow">
           <h2 className="font-semibold mb-4">🖥️ 현재 서버 목록</h2>
           <table className="min-w-full text-sm text-left border">
@@ -163,15 +157,11 @@ export default function Home() {
               {instances.map((ins) => (
                 <tr key={ins.id} className="hover:bg-gray-50">
                   <td className="p-2 border">{ins.label}</td>
-                  <td className="p-2 border">{ins.main_ip === '0.0.0.0' ? 'IP 할당 중' : ins.main_ip}</td>
+                  <td className="p-2 border">{ins.main_ip || '-'}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
                   <td className="p-2 border">
-                    {ins.status === 'pending'
-                      ? '세팅 중...'
-                      : ins.status === 'active'
-                      ? '가동 중'
-                      : ins.status}
+                    {ins.status === 'pending' ? '세팅 중' : ins.status === 'active' ? '가동 중' : ins.status}
                   </td>
                 </tr>
               ))}

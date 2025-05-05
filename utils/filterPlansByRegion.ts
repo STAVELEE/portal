@@ -5,7 +5,8 @@ interface Plan {
     locations: string[]
   }
   
-  export default function filterPlansByRegion(plans: Plan[], regionId: string) {
-    return plans.filter(plan => plan.locations.includes(regionId))
+  export default function filterPlansByRegion(plans: any[], regionId: string) {
+    return plans.filter(p => p.locations?.includes(regionId))
   }
+  
   
