@@ -1,21 +1,40 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
+interface Server {
+  id: string
+  label: string
+  main_ip: string
+  region: string
+  os: string
+  status: string
+  vcpu_count: number
+  ram: number
+  disk: string
+  date_created: string
+  default_password?: string
+}
+
 export default function ServerDetail() {
   const router = useRouter()
   const { id } = router.query
 
-  const [server, setServer] = useState<any>(null)
+  const [server, setServer] = useState<Server | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (!id) return
+
     const fetchServer = async () => {
       try {
         const res = await fetch(`/api/vultr/instance?id=${id}`)
         const data = await res.json()
+        console.log('✅ 서버 응답:', data)
+
         if (!res.ok) throw new Error(data?.error || '정보 조회 실패')
+        if (!data.instance) throw new Error('서버 정보가 없습니다.')
+
         setServer(data.instance)
       } catch (err: any) {
         setError(err.message)
