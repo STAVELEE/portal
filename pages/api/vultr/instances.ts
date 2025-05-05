@@ -1,56 +1,41 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import axios from 'axios'
+import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { id } = req.query
-  const apiKey = process.env.VULTR_API_KEY
+  const apiKey = process.env.VULTR_API_KEY;
 
   if (!apiKey) {
-    console.error('❌ API 키가 존재하지 않습니다.')
-    return res.status(500).json({ error: 'API 키 없음' })
-  }
-
-  if (!id || typeof id !== 'string') {
-    return res.status(400).json({ error: '유효한 서버 ID가 필요합니다.' })
+    console.error('❌ VULTR_API_KEY 환경변수가 설정되지 않았습니다.');
+    return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 없습니다.' });
   }
 
   try {
-    const response = await axios.get(`https://api.vultr.com/v2/instances/${id}`, {
+    const response = await axios.get('https://api.vultr.com/v2/instances', {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-    })
+    });
 
-    const ins = response.data.instance || response.data || {}
-
-    const formatted = {
-      id: ins.id || 'unknown',
-      label: ins.label || '',
-      region: ins.region || '',
-      os: ins.os || '',
-      ram: ins.ram || 0,
-      disk: ins.disk || '',
-      vcpu_count: ins.vcpu_count || '',
-      date_created: ins.date_created || '',
-      main_ip: ins.main_ip === '0.0.0.0' ? '할당 중' : (ins.main_ip || ''),
-      default_password: ins.default_password || '',
+    const instances = response.data.instances.map((ins: any) => ({
+      id: ins.id,
+      label: ins.label,
+      region: ins.region,
+      os: ins.os,
+      main_ip: ins.main_ip === '0.0.0.0' ? '할당 중' : ins.main_ip,
       status: formatStatus(ins.status, ins.power_status),
-    }
+    }));
 
-    return res.status(200).json({ instance: formatted })
+    return res.status(200).json({ instances });
   } catch (error: any) {
-    console.error('🔴 인스턴스 상세 조회 실패:', error.response?.data || error.message)
-    return res.status(500).json({
-      error: '인스턴스 조회 실패',
-      detail: error.response?.data || error.message,
-    })
+    console.error('🔴 인스턴스 목록 조회 실패:', error.response?.data || error.message);
+    return res.status(500).json({ error: '인스턴스 목록 호출 실패', detail: error.response?.data || error.message });
   }
 }
 
 function formatStatus(status: string, power: string) {
-  if (status === 'pending') return '세팅 중'
-  if (status === 'active' && power === 'running') return '가동 중'
-  if (status === 'active') return '대기 중'
-  return status || '알 수 없음'
+  if (status === 'pending') return '세팅 중';
+  if (status === 'active' && power === 'running') return '가동 중';
+  if (status === 'active') return '대기 중';
+  return status;
 }

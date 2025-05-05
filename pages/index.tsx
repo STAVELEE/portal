@@ -1,39 +1,39 @@
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 interface Instance {
-  id: string
-  label: string
-  main_ip: string
-  region: string
-  os: string
-  status: string
+  id: string;
+  label: string;
+  main_ip: string;
+  region: string;
+  os: string;
+  status: string;
 }
 
 export default function ServerList() {
-  const router = useRouter()
-  const [instances, setInstances] = useState<Instance[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [instances, setInstances] = useState<Instance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchInstances = async () => {
       try {
-        const res = await fetch('/api/vultr/instances')
-        const data = await res.json()
-        if (!res.ok) throw new Error(data?.error || '불러오기 실패')
-        setInstances(data.instances || [])
+        const res = await fetch('/api/vultr/instances');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
+        setInstances(data.instances || []);
       } catch (err: any) {
-        setError(err.message)
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchInstances()
-    const interval = setInterval(fetchInstances, 5000)
-    return () => clearInterval(interval)
-  }, [])
+    fetchInstances();
+    const interval = setInterval(fetchInstances, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -47,9 +47,9 @@ export default function ServerList() {
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>
 
         {loading ? (
-          <p className="text-gray-600">⏳ 로딩 중...</p>
+          <p className="text-gray-600">로딩 중...</p>
         ) : error ? (
-          <p className="text-red-600">❌ {error}</p>
+          <p className="text-red-600">{error}</p>
         ) : (
           <table className="min-w-full text-sm text-left border bg-white rounded shadow">
             <thead className="bg-gray-200">
@@ -70,8 +70,8 @@ export default function ServerList() {
                 >
                   <td className="p-2 border">{ins.label}</td>
                   <td className="p-2 border">{ins.main_ip || '-'}</td>
-                  <td className="p-2 border">{typeof ins.region === 'string' ? ins.region : '알 수 없음'}</td>
-                  <td className="p-2 border">{typeof ins.os === 'string' ? ins.os : '알 수 없음'}</td>
+                  <td className="p-2 border">{ins.region}</td>
+                  <td className="p-2 border">{ins.os}</td>
                   <td className="p-2 border">{ins.status}</td>
                 </tr>
               ))}
@@ -80,5 +80,5 @@ export default function ServerList() {
         )}
       </div>
     </div>
-  )
+  );
 }
