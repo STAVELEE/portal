@@ -28,6 +28,11 @@ export default function ServerList() {
   }, [])
 
   return (
+    <div className="mb-4">
+      <a href="/servers/create" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        ➕ 새 서버 생성
+      </a>
+    </div>
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto">
         <div className="mb-4">
@@ -53,12 +58,12 @@ export default function ServerList() {
             </thead>
             <tbody>
               {instances.map((ins) => (
-                <tr
-                  key={ins.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => window.location.href = `/servers/${ins.id}`}
-                >
-                  <td className="p-2 border">{ins.label}</td>
+                <tr key={ins.id} className="hover:bg-gray-50">
+                  <td className="p-2 border">
+                    <Link href={`/servers/${ins.id}`} className="text-blue-600 hover:underline">
+                      {ins.label}
+                    </Link>
+                  </td>
                   <td className="p-2 border">{ins.main_ip || '-'}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
@@ -66,13 +71,6 @@ export default function ServerList() {
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={5} className="p-2 border text-center text-gray-500">
-                  {instances.length === 0 ? '서버가 없습니다.' : ''}
-                </td>
-              </tr>
-            </tfoot>  
           </table>
         )}
       </div>
