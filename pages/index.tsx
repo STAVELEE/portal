@@ -1,3 +1,4 @@
+// pages/index.tsx
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
 import filterPlansByRegion from '../utils/filterPlansByRegion'
@@ -6,13 +7,18 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const isAdmin = useAdmin()
 
-  const [type, setType] = useState('')
   const [regions, setRegions] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [oses, setOses] = useState<any[]>([])
   const [instances, setInstances] = useState<any[]>([])
 
-  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
+  const [form, setForm] = useState({
+    region: '',
+    type: '',
+    plan: '',
+    os_id: '',
+    label: ''
+  })
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -42,15 +48,15 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!type) return
+    if (!form.type) return
     const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans?type=${type}`)
+      const res = await fetch(`/api/vultr/plans?type=${form.type}`)
       const data = await res.json()
       const filtered = filterPlansByRegion(data.plans || [], form.region)
       setPlans(filtered)
     }
     fetchPlans()
-  }, [type, form.region])
+  }, [form.type, form.region])
 
   if (!mounted) return null
 
@@ -63,7 +69,7 @@ export default function Home() {
     setError('')
     setResult(null)
 
-    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    let label = form.label.trim() || `nebulax-${Math.floor(1000 + Math.random() * 9000)}`
     const exists = instances.some((ins) => ins.label === label)
     if (exists) {
       setError('❌ 이미 존재하는 서버 이름입니다.')
@@ -71,33 +77,37 @@ export default function Home() {
       return
     }
 
-    // 서버 세팅 중 상태를 바로 반영
+    // optimistic UI update
     setInstances(prev => [
-      { id: 'new', label, main_ip: '-', region: form.region, os: '-', status: 'pending' },
-      ...prev,
+      { label, main_ip: '-', region: form.region, os: '-', status: 'pending' },
+      ...prev
     ])
 
     const payload = { ...form, label }
-
     const res = await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-
     const data = await res.json()
     setResult(data)
 
-    // 서버 생성 완료 후 목록 다시 로딩
     const updated = await fetch('/api/vultr/instances').then(res => res.json())
     setInstances(updated.instances || [])
     setLoading(false)
   }
 
-  const renderStatus = (status: string) => {
-    if (status === 'active') return '✅ 가동 중'
-    if (status === 'pending' || status === 'installing') return '⚙️ 세팅 중'
-    return status
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return '✅ 가동 중'
+      case 'pending':
+        return '🛠️ 세팅 중'
+      case 'stopped':
+        return '⛔ 정지됨'
+      default:
+        return `🔄 ${status}`
+    }
   }
 
   return (
@@ -106,16 +116,16 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🌐 Vultr 서버 생성 포털</h1>
 
         <div className="flex flex-wrap gap-4 mb-4">
-          {/* 리전 선택 */}
           <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
             {regions.map(r => (
-              <option key={r.id} value={r.id}>{r.country} - {r.city}</option>
+              <option key={r.id} value={r.id}>
+                {r.country} - {r.city}
+              </option>
             ))}
           </select>
 
-          {/* 서버 타입 선택 */}
-          <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded w-64" disabled={!form.region}>
+          <select name="type" onChange={handleChange} value={form.type} className="p-2 border rounded w-64" disabled={!form.region}>
             <option value="">서버 타입 선택</option>
             <option value="vc2">Cloud Compute (vc2)</option>
             <option value="vhf">High Frequency (vhf)</option>
@@ -125,8 +135,7 @@ export default function Home() {
             <option value="voc-m">Memory Optimized (voc-m)</option>
           </select>
 
-          {/* 플랜 선택 */}
-          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
+          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!form.type}>
             <option value="">플랜 선택</option>
             {plans.map(p => (
               <option key={p.id} value={p.id}>
@@ -135,13 +144,13 @@ export default function Home() {
             ))}
           </select>
 
-          {/* OS 선택 */}
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
             <option value="">OS 선택</option>
-            {oses.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            {oses.map(o => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
           </select>
 
-          {/* 라벨 입력 */}
           <input
             type="text"
             name="label"
@@ -158,6 +167,13 @@ export default function Home() {
 
         {error && <p className="text-red-600 mb-2">{error}</p>}
 
+        {result && (
+          <div className="bg-white p-4 rounded shadow mb-6">
+            <h2 className="font-semibold mb-2">📦 생성 결과</h2>
+            <pre className="text-sm text-gray-700 overflow-x-auto">{JSON.stringify(result, null, 2)}</pre>
+          </div>
+        )}
+
         <div className="bg-white p-4 rounded shadow">
           <h2 className="font-semibold mb-4">🖥️ 현재 서버 목록</h2>
           <table className="min-w-full text-sm text-left border">
@@ -172,12 +188,12 @@ export default function Home() {
             </thead>
             <tbody>
               {instances.map((ins) => (
-                <tr key={ins.id} className="hover:bg-gray-50">
+                <tr key={ins.id || ins.label} className="hover:bg-gray-50">
                   <td className="p-2 border">{ins.label}</td>
                   <td className="p-2 border">{ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">{renderStatus(ins.status)}</td>
+                  <td className="p-2 border">{getStatusLabel(ins.status)}</td>
                 </tr>
               ))}
             </tbody>
