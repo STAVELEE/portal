@@ -1,40 +1,28 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-interface Server {
-  id: string
-  label: string
-  main_ip: string
-  region: string
-  os: string
-  status: string
-  vcpu_count: number
-  ram: number
-  disk: string
-  date_created: string
-  default_password?: string
-}
-
 export default function ServerDetail() {
   const router = useRouter()
-  const { id } = router.query
-
-  const [server, setServer] = useState<Server | null>(null)
+  const [server, setServer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!id) return
+    if (!router.isReady) return  // ✅ router가 준비되었을 때만 실행
+
+    const { id } = router.query
+
+    if (!id || typeof id !== 'string') {
+      setError('유효한 서버 ID가 필요합니다.')
+      setLoading(false)
+      return
+    }
 
     const fetchServer = async () => {
       try {
         const res = await fetch(`/api/vultr/instance?id=${id}`)
         const data = await res.json()
-        console.log('✅ 서버 응답:', data)
-
         if (!res.ok) throw new Error(data?.error || '정보 조회 실패')
-        if (!data.instance) throw new Error('서버 정보가 없습니다.')
-
         setServer(data.instance)
       } catch (err: any) {
         setError(err.message)
@@ -44,7 +32,7 @@ export default function ServerDetail() {
     }
 
     fetchServer()
-  }, [id])
+  }, [router.isReady, router.query])
 
   if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>
   if (error) return <p className="p-4 text-red-500">❌ {error}</p>
@@ -54,12 +42,11 @@ export default function ServerDetail() {
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
         <h1 className="text-2xl font-bold mb-4">🖥️ 서버 상세 정보</h1>
-
         <table className="w-full text-sm border">
           <tbody>
             <tr><td className="font-semibold p-2 border w-1/3">ID</td><td className="p-2 border">{server.id}</td></tr>
             <tr><td className="font-semibold p-2 border">이름</td><td className="p-2 border">{server.label}</td></tr>
-            <tr><td className="font-semibold p-2 border">IP</td><td className="p-2 border">{server.main_ip || '할당 중'}</td></tr>
+            <tr><td className="font-semibold p-2 border">IP</td><td className="p-2 border">{server.main_ip}</td></tr>
             <tr><td className="font-semibold p-2 border">지역</td><td className="p-2 border">{server.region}</td></tr>
             <tr><td className="font-semibold p-2 border">OS</td><td className="p-2 border">{server.os}</td></tr>
             <tr><td className="font-semibold p-2 border">상태</td><td className="p-2 border">{server.status}</td></tr>
