@@ -1,149 +1,41 @@
 import { useEffect, useState } from 'react'
-import useAdmin from '../lib/useAdmin'
-import filterPlansByRegion from '../utils/filterPlansByRegion'
 
-export default function Home() {
-  const [mounted, setMounted] = useState(false)
-  const isAdmin = useAdmin()
+interface Instance {
+  id: string
+  label: string
+  main_ip: string
+  region: string
+  os: string
+  status: string
+}
 
-  const [type, setType] = useState('')
-  const [regions, setRegions] = useState<any[]>([])
-  const [plans, setPlans] = useState<any[]>([])
-  const [oses, setOses] = useState<any[]>([])
-  const [instances, setInstances] = useState<any[]>([])
-
-  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+export default function ServerList() {
+  const [instances, setInstances] = useState<Instance[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setMounted(true)
-
-    const fetchInitial = async () => {
-      const [r, o, i] = await Promise.all([
-        fetch('/api/vultr/regions').then(res => res.json()),
-        fetch('/api/vultr/os').then(res => res.json()),
-        fetch('/api/vultr/instances').then(res => res.json())
-      ])
-      setRegions(r.regions || [])
-      setOses(o.os || [])
-      setInstances(i.instances || [])
-    }
-
-    fetchInitial()
-  }, [])
-
-  // 플랜 동적 로딩
-  useEffect(() => {
-    if (!type || !form.region) return
-
-    const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans?type=${type}`)
+    const fetchInstances = async () => {
+      const res = await fetch('/api/vultr/instances')
       const data = await res.json()
-      const filtered = filterPlansByRegion(data.plans || [], form.region)
-      setPlans(filtered)
+      setInstances(data.instances || [])
+      setLoading(false)
     }
 
-    fetchPlans()
-  }, [type, form.region])
+    fetchInstances()
 
-  // 5초마다 인스턴스 상태 polling
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetch('/api/vultr/instances')
-        .then(res => res.json())
-        .then(data => setInstances(data.instances || []))
-    }, 5000)
-
+    const interval = setInterval(fetchInstances, 5000)
     return () => clearInterval(interval)
   }, [])
-
-  if (!mounted) return null
-
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  const createServer = async () => {
-    setLoading(true)
-    setError('')
-
-    let label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
-    const exists = instances.some((ins) => ins.label === label)
-    if (exists) {
-      setError('❌ 이미 존재하는 서버 이름입니다.')
-      setLoading(false)
-      return
-    }
-
-    const payload = { ...form, label }
-
-    await fetch('/api/server/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-
-    setForm({ region: '', plan: '', os_id: '', label: '' })
-    setLoading(false)
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-700 mb-6">🌐 Vultr 서버 생성 포털</h1>
+        <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>
 
-        <div className="flex flex-wrap gap-4 mb-4">
-          <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
-            <option value="">리전 선택</option>
-            {regions.map(r => (
-              <option key={r.id} value={r.id}>{r.country} - {r.city}</option>
-            ))}
-          </select>
-
-          <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded w-64" disabled={!form.region}>
-            <option value="">서버 타입 선택</option>
-            <option value="vc2">Cloud Compute (vc2)</option>
-            <option value="vhf">High Frequency (vhf)</option>
-            <option value="vdc">Dedicated (vdc)</option>
-            <option value="voc-g">General Purpose (voc-g)</option>
-            <option value="voc-c">CPU Optimized (voc-c)</option>
-            <option value="voc-m">Memory Optimized (voc-m)</option>
-          </select>
-
-          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
-            <option value="">플랜 선택</option>
-            {plans.map(p => (
-              <option key={p.id} value={p.id}>{p.id} - {p.vcpu_count}vCPU / {p.ram}MB</option>
-            ))}
-          </select>
-
-          <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
-            <option value="">OS 선택</option>
-            {oses.map(o => (
-              <option key={o.id} value={o.id}>{o.name}</option>
-            ))}
-          </select>
-
-          <input
-            type="text"
-            name="label"
-            value={form.label}
-            onChange={handleChange}
-            placeholder="서버 라벨 (선택)"
-            className="p-2 border rounded w-48"
-          />
-
-          <button onClick={createServer} disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            {loading ? '⏳ 생성 중...' : '🚀 서버 생성'}
-          </button>
-        </div>
-
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="font-semibold mb-4">🖥️ 현재 서버 목록</h2>
-          <table className="min-w-full text-sm text-left border">
+        {loading ? (
+          <p className="text-gray-600">로딩 중...</p>
+        ) : (
+          <table className="min-w-full text-sm text-left border bg-white rounded shadow">
             <thead className="bg-gray-200">
               <tr>
                 <th className="p-2 border">이름</th>
@@ -160,14 +52,12 @@ export default function Home() {
                   <td className="p-2 border">{ins.main_ip || '-'}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">
-                    {ins.status === 'pending' ? '세팅 중' : ins.status === 'active' ? '가동 중' : ins.status}
-                  </td>
+                  <td className="p-2 border">{ins.status}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        )}
       </div>
     </div>
   )
