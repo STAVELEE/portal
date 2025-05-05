@@ -1,24 +1,18 @@
-// pages/index.tsx
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
 import filterPlansByRegion from '../utils/filterPlansByRegion'
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false)
   const isAdmin = useAdmin()
+  const [mounted, setMounted] = useState(false)
 
+  const [type, setType] = useState('')
   const [regions, setRegions] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [oses, setOses] = useState<any[]>([])
   const [instances, setInstances] = useState<any[]>([])
 
-  const [form, setForm] = useState({
-    region: '',
-    type: '',
-    plan: '',
-    os_id: '',
-    label: ''
-  })
+  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -31,7 +25,7 @@ export default function Home() {
     const fetchOptions = async () => {
       const [r, o] = await Promise.all([
         fetch('/api/vultr/regions').then(res => res.json()),
-        fetch('/api/vultr/os').then(res => res.json()),
+        fetch('/api/vultr/os').then(res => res.json())
       ])
       setRegions(r.regions || [])
       setOses(o.os || [])
@@ -48,17 +42,15 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!form.type) return
+    if (!type) return
     const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans?type=${form.type}`)
+      const res = await fetch(`/api/vultr/plans?type=${type}`)
       const data = await res.json()
       const filtered = filterPlansByRegion(data.plans || [], form.region)
       setPlans(filtered)
     }
     fetchPlans()
-  }, [form.type, form.region])
-
-  if (!mounted) return null
+  }, [type])
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -69,7 +61,7 @@ export default function Home() {
     setError('')
     setResult(null)
 
-    let label = form.label.trim() || `nebulax-${Math.floor(1000 + Math.random() * 9000)}`
+    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
     const exists = instances.some((ins) => ins.label === label)
     if (exists) {
       setError('❌ 이미 존재하는 서버 이름입니다.')
@@ -77,13 +69,8 @@ export default function Home() {
       return
     }
 
-    // optimistic UI update
-    setInstances(prev => [
-      { label, main_ip: '-', region: form.region, os: '-', status: 'pending' },
-      ...prev
-    ])
-
     const payload = { ...form, label }
+
     const res = await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,23 +79,13 @@ export default function Home() {
     const data = await res.json()
     setResult(data)
 
+    // ✅ 즉시 서버 목록 갱신
     const updated = await fetch('/api/vultr/instances').then(res => res.json())
     setInstances(updated.instances || [])
     setLoading(false)
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active':
-        return '✅ 가동 중'
-      case 'pending':
-        return '🛠️ 세팅 중'
-      case 'stopped':
-        return '⛔ 정지됨'
-      default:
-        return `🔄 ${status}`
-    }
-  }
+  if (!mounted) return null
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -119,13 +96,11 @@ export default function Home() {
           <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
             {regions.map(r => (
-              <option key={r.id} value={r.id}>
-                {r.country} - {r.city}
-              </option>
+              <option key={r.id} value={r.id}>{r.country} - {r.city}</option>
             ))}
           </select>
 
-          <select name="type" onChange={handleChange} value={form.type} className="p-2 border rounded w-64" disabled={!form.region}>
+          <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded w-64" disabled={!form.region}>
             <option value="">서버 타입 선택</option>
             <option value="vc2">Cloud Compute (vc2)</option>
             <option value="vhf">High Frequency (vhf)</option>
@@ -135,7 +110,7 @@ export default function Home() {
             <option value="voc-m">Memory Optimized (voc-m)</option>
           </select>
 
-          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!form.type}>
+          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
             <option value="">플랜 선택</option>
             {plans.map(p => (
               <option key={p.id} value={p.id}>
@@ -146,9 +121,7 @@ export default function Home() {
 
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
             <option value="">OS 선택</option>
-            {oses.map(o => (
-              <option key={o.id} value={o.id}>{o.name}</option>
-            ))}
+            {oses.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
 
           <input
@@ -188,12 +161,18 @@ export default function Home() {
             </thead>
             <tbody>
               {instances.map((ins) => (
-                <tr key={ins.id || ins.label} className="hover:bg-gray-50">
+                <tr key={ins.id} className="hover:bg-gray-50">
                   <td className="p-2 border">{ins.label}</td>
-                  <td className="p-2 border">{ins.main_ip}</td>
+                  <td className="p-2 border">{ins.main_ip === '0.0.0.0' ? 'IP 할당 중' : ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">{getStatusLabel(ins.status)}</td>
+                  <td className="p-2 border">
+                    {ins.status === 'pending'
+                      ? '세팅 중...'
+                      : ins.status === 'active'
+                      ? '가동 중'
+                      : ins.status}
+                  </td>
                 </tr>
               ))}
             </tbody>
