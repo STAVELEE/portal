@@ -1,7 +1,5 @@
-// pages/index.tsx
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
-import { filterPlansByRegion } from '../utils/filterPlansByRegion'
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -52,15 +50,35 @@ export default function Home() {
     fetchPlans()
   }, [type])
 
-  const filteredPlans = filterPlansByRegion(plans, form.region)
-
-  if (!mounted) return null
-
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
+  const renderStatus = (status: string) => {
+    switch (status) {
+      case 'active': return '✅ 가동중'
+      case 'pending': return '🛠 세팅 중...'
+      case 'stopped': return '⛔ 중지됨'
+      case 'locked': return '🔒 잠김'
+      default: return status
+    }
+  }
+
+  const waitForServerReady = async (label: string, maxRetries = 10, delay = 3000) => {
+    for (let i = 0; i < maxRetries; i++) {
+      const res = await fetch('/api/vultr/instances')
+      const data = await res.json()
+      const matched = data.instances?.find((ins: any) => ins.label === label)
+
+      if (matched) {
+        if (matched.status !== 'pending') return data.instances
+        setInstances(data.instances) // 중간 상태 보여주기
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+    return []
+  }
 
   const createServer = async () => {
     setLoading(true)
@@ -86,25 +104,12 @@ export default function Home() {
     const data = await res.json()
     setResult(data)
 
-    setInstances(prev => [
-      {
-        id: data.instance.id,
-        label: data.instance.label,
-        main_ip: '0.0.0.0',
-        region: data.instance.region,
-        os: data.instance.os,
-        status: 'pending'
-      },
-      ...prev
-    ])
-
-    setTimeout(async () => {
-      const updated = await fetch('/api/vultr/instances').then(res => res.json())
-      setInstances(updated.instances || [])
-    }, 5000)
-
+    const updatedInstances = await waitForServerReady(label)
+    setInstances(updatedInstances)
     setLoading(false)
   }
+
+  if (!mounted) return null
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -112,6 +117,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🌐 Vultr 서버 생성 포털</h1>
 
         <div className="flex flex-wrap gap-4 mb-4">
+          {/* 리전 */}
           <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
             {regions.map(r => (
@@ -119,6 +125,7 @@ export default function Home() {
             ))}
           </select>
 
+          {/* 서버 타입 */}
           <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded w-64" disabled={!form.region}>
             <option value="">서버 타입 선택</option>
             <option value="vc2">Cloud Compute (vc2)</option>
@@ -129,18 +136,21 @@ export default function Home() {
             <option value="voc-m">Memory Optimized (voc-m)</option>
           </select>
 
-          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type || !form.region}>
+          {/* 플랜 */}
+          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
             <option value="">플랜 선택</option>
-            {filteredPlans.map(p => (
+            {plans.map(p => (
               <option key={p.id} value={p.id}>{p.id} - {p.vcpu_count}vCPU / {p.ram}MB</option>
             ))}
           </select>
 
+          {/* OS */}
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
             <option value="">OS 선택</option>
             {oses.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
 
+          {/* 라벨 */}
           <input
             type="text"
             name="label"
@@ -157,15 +167,10 @@ export default function Home() {
 
         {error && <p className="text-red-600 mb-2">{error}</p>}
 
-        {result?.instance && (
+        {result && (
           <div className="bg-white p-4 rounded shadow mb-6">
             <h2 className="font-semibold mb-2">📦 생성 결과</h2>
-            <ul className="text-sm text-gray-800">
-              <li>🔑 비밀번호: {result.instance.default_password}</li>
-              <li>📛 라벨: {result.instance.label}</li>
-              <li>🖥 OS: {result.instance.os}</li>
-              <li>📶 상태: {result.instance.status}</li>
-            </ul>
+            <pre className="text-sm text-gray-700 overflow-x-auto">{JSON.stringify(result, null, 2)}</pre>
           </div>
         )}
 
@@ -188,9 +193,7 @@ export default function Home() {
                   <td className="p-2 border">{ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">
-                    {ins.status === 'pending' ? '🛠️ 세팅중' : ins.status === 'active' ? '✅ 운영중' : ins.status}
-                  </td>
+                  <td className="p-2 border">{renderStatus(ins.status)}</td>
                 </tr>
               ))}
             </tbody>
