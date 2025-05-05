@@ -18,7 +18,7 @@ export default function ServerDetail() {
       setError('')
 
       try {
-        const res = await fetch(`/api/vultr/instances/${id}`)
+        const res = await fetch(`/api/vultr/instances/${id}`)  // id를 포함한 API 경로로 호출
         const data = await res.json()
 
         if (res.ok) {
