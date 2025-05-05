@@ -1,5 +1,7 @@
-export function filterPlansByRegion(plans: any[], regionId: string) {
-    if (!regionId) return []
-    return plans.filter(plan => Array.isArray(plan.locations) && plan.locations.includes(regionId))
+// utils/filterPlansByRegion.ts
+export function filterPlansByRegion(plans: any[], region: string, type: string) {
+    return plans.filter(plan =>
+      plan.locations.includes(region) && plan.id.startsWith(type)
+    );
   }
   
