@@ -1,31 +1,23 @@
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+// pages/server/[id].tsx
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
-export default function ServerDetail() {
-  const router = useRouter()
-  const { id } = router.query
-
-  const [server, setServer] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+export default function ServerDetails() {
+  const router = useRouter();
+  const { id } = router.query;
+  const [server, setServer] = useState<any>(null);
 
   useEffect(() => {
-    if (!id) return
-    const fetchServerDetail = async () => {
-      try {
-        const res = await fetch(`/api/vultr/instance/${id}`)
-        if (!res.ok) throw new Error('서버 정보를 불러오는 중 오류 발생')
-        const data = await res.json()
-        setServer(data.instance)
-      } catch (err: any) {
-        setError('서버 정보를 불러오는 중 오류 발생')
-      } finally {
-        setLoading(false)
-      }
-    }
+    if (id) {
+      const fetchServerDetails = async () => {
+        const res = await fetch(`/api/vultr/instances/${id}`);
+        const data = await res.json();
+        setServer(data);
+      };
 
-    fetchServerDetail()
-  }, [id])
+      fetchServerDetails();
+    }
+  }, [id]);
 
   if (loading) return <p>⏳ 서버 로딩 중...</p>
   if (error) return <p className="text-red-600">{error}</p>
