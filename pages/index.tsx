@@ -24,10 +24,10 @@ export default function ServerList() {
         const data = await res.json()
         if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패')
 
-        let updated = data.instances || []
+        let updated: Instance[] = data.instances || []
 
-        // ✅ 생성 요청 후 아직 Vultr에서 응답 안된 경우
-        if (newLabel && !updated.some(i => i.label === newLabel)) {
+        // ✅ 타입 명시로 빌드 에러 해결
+        if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
           updated = [
             {
               id: 'creating-' + Date.now(),
