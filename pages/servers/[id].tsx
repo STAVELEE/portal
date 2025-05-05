@@ -1,26 +1,21 @@
+// pages/servers/[id].tsx
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function ServerDetail() {
   const router = useRouter()
+  const { id } = router.query
+
   const [server, setServer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!router.isReady) return  // ✅ router가 준비되었을 때만 실행
-
-    const { id } = router.query
-
-    if (!id || typeof id !== 'string') {
-      setError('유효한 서버 ID가 필요합니다.')
-      setLoading(false)
-      return
-    }
+    if (!id || typeof id !== 'string') return
 
     const fetchServer = async () => {
       try {
-        const res = await fetch(`/api/vultr/instance?id=${id}`)
+        const res = await fetch(`/api/vultr/${id}`)
         const data = await res.json()
         if (!res.ok) throw new Error(data?.error || '정보 조회 실패')
         setServer(data.instance)
@@ -32,7 +27,7 @@ export default function ServerDetail() {
     }
 
     fetchServer()
-  }, [router.isReady, router.query])
+  }, [id])
 
   if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>
   if (error) return <p className="p-4 text-red-500">❌ {error}</p>
@@ -42,6 +37,7 @@ export default function ServerDetail() {
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
         <h1 className="text-2xl font-bold mb-4">🖥️ 서버 상세 정보</h1>
+
         <table className="w-full text-sm border">
           <tbody>
             <tr><td className="font-semibold p-2 border w-1/3">ID</td><td className="p-2 border">{server.id}</td></tr>
