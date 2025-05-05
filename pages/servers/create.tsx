@@ -63,7 +63,7 @@ export default function CreateServer() {
     }
 
     // 생성 성공 시 서버 목록으로 이동
-    router.push('/servers')
+    router.push('/')
   }
 
   return (
