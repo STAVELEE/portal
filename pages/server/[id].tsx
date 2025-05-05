@@ -1,33 +1,62 @@
-// pages/server/[id].tsx
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 
 export default function ServerDetail() {
-  const { query } = useRouter()
-  const [data, setData] = useState<any>(null)
-  const [password, setPassword] = useState('')
+  const router = useRouter()
+  const { id } = router.query
+
+  const [server, setServer] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!query.id) return
-    fetch(`/api/vultr/instance?id=${query.id}`)
-      .then(res => res.json())
-      .then(setData)
+    if (!id) return
+    const fetchServerDetail = async () => {
+      try {
+        const res = await fetch(`/api/vultr/instance/${id}`)
+        if (!res.ok) throw new Error('서버 정보를 불러오는 중 오류 발생')
+        const data = await res.json()
+        setServer(data.instance)
+      } catch (err: any) {
+        setError('서버 정보를 불러오는 중 오류 발생')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-    const storedPass = sessionStorage.getItem(`server-password-${query.id}`)
-    setPassword(storedPass || '비밀번호 정보 없음')
-  }, [query.id])
+    fetchServerDetail()
+  }, [id])
 
-  if (!data) return <p className="p-4">로딩 중...</p>
+  if (loading) return <p>⏳ 서버 로딩 중...</p>
+  if (error) return <p className="text-red-600">{error}</p>
+
+  if (!server) return <p>❌ 서버 정보를 찾을 수 없습니다.</p>
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">🖥️ 서버 상세 정보</h1>
-      <pre className="bg-gray-100 p-4 rounded mb-4 overflow-x-auto text-sm">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-      <div className="bg-white p-4 rounded shadow">
-        <h2 className="font-semibold mb-2">🔑 비밀번호</h2>
-        <p className="font-mono">{password}</p>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold text-blue-700 mb-6">📦 {server.label} 상세 정보</h1>
+
+        <div className="bg-white p-4 rounded shadow mb-6">
+          <h2 className="text-lg font-semibold mb-4">서버 기본 정보</h2>
+          <ul className="space-y-4">
+            <li><strong>IP 주소:</strong> {server.main_ip}</li>
+            <li><strong>리전:</strong> {server.region}</li>
+            <li><strong>OS:</strong> {server.os}</li>
+            <li><strong>상태:</strong> {server.status}</li>
+            <li><strong>라벨:</strong> {server.label}</li>
+            <li><strong>생성 시간:</strong> {new Date(server.date_created).toLocaleString()}</li>
+            <li><strong>비밀번호:</strong> {server.default_password}</li>
+          </ul>
+        </div>
+
+        <h2 className="text-lg font-semibold mb-4">서버 상태</h2>
+        <ul className="space-y-4">
+          <li><strong>CPU:</strong> {server.vcpu_count} vCPU</li>
+          <li><strong>RAM:</strong> {server.ram} MB</li>
+          <li><strong>디스크:</strong> {server.disk} GB</li>
+          <li><strong>대역폭:</strong> {server.allowed_bandwidth} GB</li>
+        </ul>
       </div>
     </div>
   )
