@@ -53,7 +53,11 @@ export default function ServerList() {
             </thead>
             <tbody>
               {instances.map((ins) => (
-                <tr key={ins.id} className="hover:bg-gray-50">
+                <tr
+                  key={ins.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => window.location.href = `/servers/${ins.id}`}
+                >
                   <td className="p-2 border">{ins.label}</td>
                   <td className="p-2 border">{ins.main_ip || '-'}</td>
                   <td className="p-2 border">{ins.region}</td>
@@ -62,6 +66,13 @@ export default function ServerList() {
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={5} className="p-2 border text-center text-gray-500">
+                  {instances.length === 0 ? '서버가 없습니다.' : ''}
+                </td>
+              </tr>
+            </tfoot>  
           </table>
         )}
       </div>
