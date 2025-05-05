@@ -50,8 +50,12 @@ export default function CreateServer() {
     const res = await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, label }),
+      body: JSON.stringify(payload),
     })
+    
+    // ✅ 리다이렉트 추가
+    router.push('/')
+    
 
     const data = await res.json()
     if (!res.ok) {

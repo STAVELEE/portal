@@ -28,6 +28,12 @@ export default function ServerList() {
   }, [])
 
   return (
+    <div className="mb-4">
+  <a href="/servers/create" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+    ➕ 새 서버 생성
+  </a>
+</div>
+
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>

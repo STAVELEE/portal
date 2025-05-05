@@ -6,9 +6,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { id } = req.query
   const apiKey = process.env.VULTR_API_KEY
 
+
   if (!apiKey) {
-    return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 없습니다.' })
+    console.error('❌ API 키가 존재하지 않습니다.')
+    return res.status(500).json({ error: 'API 키 없음' })
   }
+  
 
   if (!id || typeof id !== 'string') {
     return res.status(400).json({ error: '유효한 서버 ID가 필요합니다.' })
