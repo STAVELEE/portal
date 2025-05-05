@@ -1,6 +1,7 @@
 // pages/index.tsx
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
+import { filterPlansByRegion } from '../utils/filterPlansByRegion'
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -51,6 +52,8 @@ export default function Home() {
     fetchPlans()
   }, [type])
 
+  const filteredPlans = filterPlansByRegion(plans, form.region)
+
   if (!mounted) return null
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
@@ -83,7 +86,6 @@ export default function Home() {
     const data = await res.json()
     setResult(data)
 
-    // 1. 생성된 서버를 목록에 임시 추가 (상태는 pending)
     setInstances(prev => [
       {
         id: data.instance.id,
@@ -96,7 +98,6 @@ export default function Home() {
       ...prev
     ])
 
-    // 2. 일정 시간 후 실제 서버 목록 갱신
     setTimeout(async () => {
       const updated = await fetch('/api/vultr/instances').then(res => res.json())
       setInstances(updated.instances || [])
@@ -128,9 +129,9 @@ export default function Home() {
             <option value="voc-m">Memory Optimized (voc-m)</option>
           </select>
 
-          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
+          <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type || !form.region}>
             <option value="">플랜 선택</option>
-            {plans.map(p => (
+            {filteredPlans.map(p => (
               <option key={p.id} value={p.id}>{p.id} - {p.vcpu_count}vCPU / {p.ram}MB</option>
             ))}
           </select>
