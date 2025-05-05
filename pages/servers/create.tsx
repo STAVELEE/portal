@@ -46,34 +46,23 @@ export default function CreateServer() {
     setLoading(true)
     setError('')
 
-    let label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
 
-    try {
-      const res = await fetch('/api/server/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, label }),
-      })
+    const res = await fetch('/api/server/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, label }),
+    })
 
-      const data = await res.json()
+    const data = await res.json()
 
-      if (!res.ok) {
-        setError(data?.error || '서버 생성 실패')
-        setLoading(false)
-        return
-      }
-
-      // ✅ 생성된 인스턴스 ID를 localStorage에 저장
-      if (data?.instance?.id) {
-        localStorage.setItem('recentInstanceId', data.instance.id)
-      }
-
-      router.push('/')
-    } catch (err: any) {
-      setError('서버 생성 중 오류 발생')
-    } finally {
+    if (!res.ok) {
+      setError(data?.error || '서버 생성 실패')
       setLoading(false)
+      return
     }
+
+    router.push(`/?new=${label}`) // ✅ 생성 직후 서버 라벨을 쿼리로 넘김
   }
 
   return (

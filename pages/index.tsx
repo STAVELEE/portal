@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 
 interface Instance {
   id: string;
@@ -11,38 +11,48 @@ interface Instance {
 }
 
 export default function ServerList() {
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [instances, setInstances] = useState<Instance[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const router = useRouter()
+  const newLabel = router.query.new as string | undefined
 
   useEffect(() => {
     const fetchInstances = async () => {
       try {
-        const res = await fetch('/api/vultr/instances');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
+        const res = await fetch('/api/vultr/instances')
+        const data = await res.json()
+        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패')
 
-        const recentId = localStorage.getItem('recentInstanceId');
-        const updated = (data.instances || []).map((ins: Instance) => {
-          if (ins.id === recentId && ins.status !== '가동 중') {
-            return { ...ins, status: '세팅 중' }; // 강제 상태 덮어쓰기
-          }
-          return ins;
-        });
+        let updated = data.instances || []
 
-        setInstances(updated);
+        // ✅ 생성 요청 후 아직 Vultr에서 응답 안된 경우
+        if (newLabel && !updated.some(i => i.label === newLabel)) {
+          updated = [
+            {
+              id: 'creating-' + Date.now(),
+              label: newLabel,
+              main_ip: '',
+              region: '',
+              os: '',
+              status: '세팅 중',
+            },
+            ...updated
+          ]
+        }
+
+        setInstances(updated)
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchInstances();
-    const interval = setInterval(fetchInstances, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchInstances()
+    const interval = setInterval(fetchInstances, 5000)
+    return () => clearInterval(interval)
+  }, [newLabel])
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -89,5 +99,5 @@ export default function ServerList() {
         )}
       </div>
     </div>
-  );
+  )
 }
