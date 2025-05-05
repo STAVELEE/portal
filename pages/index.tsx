@@ -1,9 +1,12 @@
+// pages/index.tsx
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import useAdmin from '../lib/useAdmin'
 import filterPlansByRegion from '../utils/filterPlansByRegion'
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
+  const router = useRouter()
   const isAdmin = useAdmin()
 
   const [type, setType] = useState('')
@@ -18,45 +21,41 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
 
-    const fetchInitial = async () => {
-      const [r, o, i] = await Promise.all([
+  useEffect(() => {
+    const fetchOptions = async () => {
+      const [r, o] = await Promise.all([
         fetch('/api/vultr/regions').then(res => res.json()),
         fetch('/api/vultr/os').then(res => res.json()),
-        fetch('/api/vultr/instances').then(res => res.json())
       ])
       setRegions(r.regions || [])
       setOses(o.os || [])
-      setInstances(i.instances || [])
     }
 
-    fetchInitial()
-  }, [])
-
-  // 플랜 동적 로딩
-  useEffect(() => {
-    if (!type || !form.region) return
-
-    const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans?type=${type}`)
+    const loadInstances = async () => {
+      const res = await fetch('/api/vultr/instances')
       const data = await res.json()
-      const filtered = filterPlansByRegion(data.plans || [], form.region)
-      setPlans(filtered)
+      setInstances(data.instances || [])
     }
 
-    fetchPlans()
-  }, [type, form.region])
-
-  // 5초마다 인스턴스 상태 polling
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetch('/api/vultr/instances')
-        .then(res => res.json())
-        .then(data => setInstances(data.instances || []))
-    }, 5000)
-
-    return () => clearInterval(interval)
+    fetchOptions()
+    loadInstances()
   }, [])
+
+ // 플랜 동적 로딩
+ useEffect(() => {
+  if (!type || !form.region) return
+
+  const fetchPlans = async () => {
+    const res = await fetch(`/api/vultr/plans?type=${type}`)
+    const data = await res.json()
+    const filtered = filterPlansByRegion(data.plans || [], form.region)
+    setPlans(filtered)
+  }
+
+  fetchPlans()
+}, [type, form.region])
 
   if (!mounted) return null
 
@@ -78,13 +77,19 @@ export default function Home() {
 
     const payload = { ...form, label }
 
-    await fetch('/api/server/create', {
+    const res = await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
+    const data = await res.json()
 
-    setForm({ region: '', plan: '', os_id: '', label: '' })
+    if (data?.instance?.id && data?.default_password) {
+      sessionStorage.setItem(`server-password-${data.instance.id}`, data.default_password)
+    }
+
+    const updated = await fetch('/api/vultr/instances').then(res => res.json())
+    setInstances(updated.instances || [])
     setLoading(false)
   }
 
@@ -120,9 +125,7 @@ export default function Home() {
 
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
             <option value="">OS 선택</option>
-            {oses.map(o => (
-              <option key={o.id} value={o.id}>{o.name}</option>
-            ))}
+            {oses.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
 
           <input
@@ -155,14 +158,12 @@ export default function Home() {
             </thead>
             <tbody>
               {instances.map((ins) => (
-                <tr key={ins.id} className="hover:bg-gray-50">
+                <tr key={ins.id} className="cursor-pointer hover:bg-gray-50" onClick={() => router.push(`/server/${ins.id}`)}>
                   <td className="p-2 border">{ins.label}</td>
-                  <td className="p-2 border">{ins.main_ip || '-'}</td>
+                  <td className="p-2 border">{ins.main_ip || '0.0.0.0'}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">
-                    {ins.status === 'pending' ? '세팅 중' : ins.status === 'active' ? '가동 중' : ins.status}
-                  </td>
+                  <td className="p-2 border">{ins.status === 'active' ? '가동중' : ins.status}</td>
                 </tr>
               ))}
             </tbody>
