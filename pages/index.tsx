@@ -1,7 +1,6 @@
-// pages/index.tsx
 import { useEffect, useState } from 'react'
 import useAdmin from '../lib/useAdmin'
-import { filterPlansByRegion } from '../utils/filterPlansByRegion'
+import filterPlansByRegion from '../utils/filterPlansByRegion'
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -18,7 +17,9 @@ export default function Home() {
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -41,11 +42,11 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!type || !form.region) return
+    if (!type) return
     const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans`)
+      const res = await fetch(`/api/vultr/plans?type=${type}`)
       const data = await res.json()
-      const filtered = filterPlansByRegion(data.plans || [], form.region, type)
+      const filtered = filterPlansByRegion(data.plans || [], form.region)
       setPlans(filtered)
     }
     fetchPlans()
@@ -62,19 +63,19 @@ export default function Home() {
     setError('')
     setResult(null)
 
-    if (!form.region || !form.plan || !form.os_id) {
-      setError('❌ 모든 항목을 선택해주세요.')
-      setLoading(false)
-      return
-    }
-
-    const label = form.label.trim() || `nebulax-${Math.floor(1000 + Math.random() * 9000)}`
+    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
     const exists = instances.some((ins) => ins.label === label)
     if (exists) {
       setError('❌ 이미 존재하는 서버 이름입니다.')
       setLoading(false)
       return
     }
+
+    // 서버 세팅 중 상태를 바로 반영
+    setInstances(prev => [
+      { id: 'new', label, main_ip: '-', region: form.region, os: '-', status: 'pending' },
+      ...prev,
+    ])
 
     const payload = { ...form, label }
 
@@ -83,12 +84,20 @@ export default function Home() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
+
     const data = await res.json()
     setResult(data)
 
+    // 서버 생성 완료 후 목록 다시 로딩
     const updated = await fetch('/api/vultr/instances').then(res => res.json())
     setInstances(updated.instances || [])
     setLoading(false)
+  }
+
+  const renderStatus = (status: string) => {
+    if (status === 'active') return '✅ 가동 중'
+    if (status === 'pending' || status === 'installing') return '⚙️ 세팅 중'
+    return status
   }
 
   return (
@@ -105,7 +114,7 @@ export default function Home() {
             ))}
           </select>
 
-          {/* 서버 타입 */}
+          {/* 서버 타입 선택 */}
           <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded w-64" disabled={!form.region}>
             <option value="">서버 타입 선택</option>
             <option value="vc2">Cloud Compute (vc2)</option>
@@ -116,10 +125,10 @@ export default function Home() {
             <option value="voc-m">Memory Optimized (voc-m)</option>
           </select>
 
-          {/* 플랜 */}
+          {/* 플랜 선택 */}
           <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
             <option value="">플랜 선택</option>
-            {plans.map((p) => (
+            {plans.map(p => (
               <option key={p.id} value={p.id}>
                 {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
               </option>
@@ -132,7 +141,7 @@ export default function Home() {
             {oses.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
 
-          {/* 라벨 */}
+          {/* 라벨 입력 */}
           <input
             type="text"
             name="label"
@@ -168,9 +177,7 @@ export default function Home() {
                   <td className="p-2 border">{ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
-                  <td className="p-2 border">
-                    {ins.status === 'active' ? '가동중' : ins.status}
-                  </td>
+                  <td className="p-2 border">{renderStatus(ins.status)}</td>
                 </tr>
               ))}
             </tbody>

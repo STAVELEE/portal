@@ -1,7 +1,11 @@
 // utils/filterPlansByRegion.ts
-export function filterPlansByRegion(plans: any[], region: string, type: string) {
-    return plans.filter(plan =>
-      plan.locations.includes(region) && plan.id.startsWith(type)
-    );
+
+interface Plan {
+    id: string
+    locations: string[]
+  }
+  
+  export default function filterPlansByRegion(plans: Plan[], regionId: string) {
+    return plans.filter(plan => plan.locations.includes(regionId))
   }
   
