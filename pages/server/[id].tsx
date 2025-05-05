@@ -1,44 +1,43 @@
-// pages/server/[id].tsx
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function ServerDetail() {
-  const router = useRouter()
-  const { id } = router.query
+  const router = useRouter();
+  const { id } = router.query;
 
-  const [server, setServer] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string>('')
+  const [server, setServer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (!id) return
+    if (!id) return;
 
     const fetchServerDetails = async () => {
-      setLoading(true)
-      setError('')
+      setLoading(true);
+      setError('');
 
       try {
-        const res = await fetch(`/api/vultr/instances/${id}`)  // id를 포함한 API 경로로 호출
-        const data = await res.json()
+        const res = await fetch(`/api/vultr/instances/${id}`);
+        const data = await res.json();
 
         if (res.ok) {
-          setServer(data.instance)
+          setServer(data.instance);
         } else {
-          setError(data.error || '서버 정보를 불러올 수 없습니다.')
+          setError(data.error || '서버 정보를 불러올 수 없습니다.');
         }
       } catch (err) {
-        setError('서버 정보를 불러올 수 없습니다.')
+        setError('서버 정보를 불러올 수 없습니다.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchServerDetails()
-  }, [id])
+    fetchServerDetails();
+  }, [id]);
 
-  if (loading) return <p>⏳ 서버 로딩 중...</p>
-  if (error) return <p className="text-red-600">{error}</p>
-  if (!server) return <p>❌ 서버 정보를 찾을 수 없습니다.</p>
+  if (loading) return <p>⏳ 서버 로딩 중...</p>;
+  if (error) return <p className="text-red-600">{error}</p>;
+  if (!server) return <p>❌ 서버 정보를 찾을 수 없습니다.</p>;
 
   return (
     <div>
@@ -52,5 +51,5 @@ export default function ServerDetail() {
         <p><strong>파워 상태:</strong> {server.power_status}</p>
       </div>
     </div>
-  )
+  );
 }
