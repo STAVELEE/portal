@@ -48,7 +48,7 @@ export default function ServerDetail() {
             <tr><td className="font-semibold p-2 border">상태</td><td className="p-2 border">{server.status}</td></tr>
             <tr><td className="font-semibold p-2 border">CPU</td><td className="p-2 border">{server.vcpu_count} vCPU</td></tr>
             <tr><td className="font-semibold p-2 border">RAM</td><td className="p-2 border">{server.ram} MB</td></tr>
-            <tr><td className="font-semibold p-2 border">디스크</td><td className="p-2 border">{server.disk}</td></tr>
+            <tr><td className="font-semibold p-2 border">디스크</td><td className="p-2 border">{server.disk} GB</td></tr>
             <tr><td className="font-semibold p-2 border">생성일</td><td className="p-2 border">{server.date_created}</td></tr>
             <tr><td className="font-semibold p-2 border">루트 비밀번호</td><td className="p-2 border">{server.default_password || '확인 불가'}</td></tr>
           </tbody>

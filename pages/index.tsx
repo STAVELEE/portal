@@ -22,7 +22,16 @@ export default function ServerList() {
         const res = await fetch('/api/vultr/instances');
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
-        setInstances(data.instances || []);
+
+        const recentId = localStorage.getItem('recentInstanceId');
+        const updated = (data.instances || []).map((ins: Instance) => {
+          if (ins.id === recentId && ins.status !== '가동 중') {
+            return { ...ins, status: '세팅 중' }; // 강제 상태 덮어쓰기
+          }
+          return ins;
+        });
+
+        setInstances(updated);
       } catch (err: any) {
         setError(err.message);
       } finally {
