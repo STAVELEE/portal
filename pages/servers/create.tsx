@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import filterPlansByRegion from '@/utils/filterPlansByRegion'
 
 export default function CreateServer() {
@@ -9,7 +10,8 @@ export default function CreateServer() {
   const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [result, setResult] = useState<any>(null)
+
+  const router = useRouter()
 
   useEffect(() => {
     const loadInitial = async () => {
@@ -43,33 +45,25 @@ export default function CreateServer() {
   const handleCreate = async () => {
     setLoading(true)
     setError('')
-    setResult(null)
 
     let label = form.label.trim() || `server-${Math.floor(1000 + Math.random() * 9000)}`
 
-    const payload = {
-      region: form.region,
-      plan: form.plan,
-      os_id: form.os_id,
-      label: form.label || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
-    }
-    
-    await fetch('/api/server/create', {
+    const res = await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...form, label }),
     })
-    
 
     const data = await res.json()
+
     if (!res.ok) {
       setError(data?.error || '서버 생성 실패')
-    } else {
-      setResult(data)
-      setForm({ region: '', plan: '', os_id: '', label: '' })
+      setLoading(false)
+      return
     }
 
-    setLoading(false)
+    // 생성 성공 시 서버 목록으로 이동
+    router.push('/servers')
   }
 
   return (
@@ -123,14 +117,7 @@ export default function CreateServer() {
           </button>
         </div>
 
-        {error && <p className="text-red-600 mb-4">{error}</p>}
-
-        {result && (
-          <div className="bg-white p-4 rounded shadow mt-4">
-            <h2 className="font-semibold text-gray-700 mb-2">📦 생성 결과</h2>
-            <pre className="text-sm text-gray-700">{JSON.stringify(result, null, 2)}</pre>
-          </div>
-        )}
+        {error && <p className="text-red-600 mt-2">{error}</p>}
       </div>
     </div>
   )
