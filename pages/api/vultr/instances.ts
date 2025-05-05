@@ -17,11 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const instances = response.data.instances.map((ins: any) => ({
+    const instances = (response.data.instances || []).map((ins: any) => ({
       id: ins.id,
       label: ins.label,
-      region: ins.region,
-      os: ins.os,
+      region: typeof ins.region === 'string' ? ins.region : ins.region?.id || '-',
+      os: typeof ins.os === 'string' ? ins.os : ins.os?.name || '-',
       main_ip: ins.main_ip === '0.0.0.0' ? '할당 중' : ins.main_ip,
       status: formatStatus(ins.status, ins.power_status),
     }));
@@ -29,7 +29,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ instances });
   } catch (error: any) {
     console.error('🔴 인스턴스 목록 조회 실패:', error.response?.data || error.message);
-    return res.status(500).json({ error: '인스턴스 목록 호출 실패', detail: error.response?.data || error.message });
+    return res.status(500).json({
+      error: '인스턴스 목록 호출 실패',
+      detail: error.response?.data || error.message,
+    });
   }
 }
 
