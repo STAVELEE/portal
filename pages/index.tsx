@@ -1,4 +1,3 @@
-// ✅ pages/index.tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
@@ -25,22 +24,20 @@ export default function ServerList() {
         if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
 
         let updated = data.instances || [];
-        const localLabel = localStorage.getItem('creatingLabel');
 
-        if (localLabel && !updated.some((i: Instance) => i.label === localLabel)) {
+        const newLabel = localStorage.getItem('creating_label');
+        if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
           updated = [
             {
               id: 'creating-' + Date.now(),
-              label: localLabel,
+              label: newLabel,
               main_ip: '할당 중',
-              region: '-',
-              os: '-',
+              region: '',
+              os: '',
               status: '세팅 중',
             },
             ...updated,
           ];
-        } else {
-          localStorage.removeItem('creatingLabel');
         }
 
         setInstances(updated);
@@ -64,12 +61,13 @@ export default function ServerList() {
             ➕ 새 서버 생성
           </a>
         </div>
+
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>
 
         {loading ? (
           <p className="text-gray-600">로딩 중...</p>
         ) : error ? (
-          <p className="text-red-600">❌ {error}</p>
+          <p className="text-red-600">{error}</p>
         ) : (
           <table className="min-w-full text-sm text-left border bg-white rounded shadow">
             <thead className="bg-gray-200">
