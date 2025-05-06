@@ -14,66 +14,74 @@ export default function CreateServer() {
 
   useEffect(() => {
     const loadInitial = async () => {
-      try {
-        const [r, o] = await Promise.all([
-          fetch('/api/vultr/regions').then((res) => res.json()),
-          fetch('/api/vultr/os').then((res) => res.json())
-        ])
-        setRegions(r.regions || [])
-        setOses(o.os || [])
-      } catch (err) {
-        setError('초기 데이터 로딩 실패')
-      }
+      const [r, o] = await Promise.all([
+        fetch('/api/vultr/regions').then(res => res.json()),
+        fetch('/api/vultr/os').then(res => res.json())
+      ])
+      setRegions(r.regions || [])
+      setOses(o.os || [])
     }
-
     loadInitial()
   }, [])
 
   useEffect(() => {
     if (!type || !form.region) return
-
     const fetchPlans = async () => {
-      try {
-        const res = await fetch(`/api/vultr/plans?type=${type}`)
-        const data = await res.json()
-        const filtered = filterPlansByRegion(data.plans || [], form.region)
-        setPlans(filtered)
-      } catch {
-        setError('플랜 불러오기 실패')
-      }
+      const res = await fetch(`/api/vultr/plans?type=${type}`)
+      const data = await res.json()
+      setPlans(filterPlansByRegion(data.plans || [], form.region))
     }
-
     fetchPlans()
   }, [type, form.region])
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  const downloadKeyPair = (privateKey: string, publicKey: string) => {
+    const blob = new Blob([privateKey], { type: 'application/x-pem-file' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${form.label || 'server'}-private-key.pem`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const handleCreate = async () => {
     setLoading(true)
     setError('')
-
-    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    const label = form.label.trim() || `server-${Math.floor(1000 + Math.random() * 9000)}`
     localStorage.setItem('creating_label', label)
 
     try {
+      // 🔐 키페어 생성
+      const keyRes = await fetch('/api/keys/generate', { method: 'POST' })
+      const keyData = await keyRes.json()
+      if (!keyRes.ok) throw new Error(keyData?.error || '키페어 생성 실패')
+
+      const { privateKey, publicKey } = keyData
+      downloadKeyPair(privateKey, publicKey)
+
+      // 서버 생성
       const res = await fetch('/api/server/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, label }),
+        body: JSON.stringify({ ...form, label, sshkey: publicKey }),
       })
 
       const data = await res.json()
-
       if (!res.ok) {
         setError(data?.error || '서버 생성 실패')
+        setLoading(false)
         return
       }
 
       router.push('/')
-    } catch (err) {
-      setError('서버 생성 요청 중 에러 발생')
+    } catch (e: any) {
+      setError(e.message)
     } finally {
       setLoading(false)
     }
@@ -87,10 +95,8 @@ export default function CreateServer() {
         <div className="flex flex-wrap gap-4 mb-4">
           <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
-            {regions.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.country} - {r.city}
-              </option>
+            {regions.map(r => (
+              <option key={r.id} value={r.id}>{r.country} - {r.city}</option>
             ))}
           </select>
 
@@ -106,16 +112,14 @@ export default function CreateServer() {
 
           <select name="plan" onChange={handleChange} value={form.plan} className="p-2 border rounded w-64" disabled={!type}>
             <option value="">플랜 선택</option>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id} - {p.vcpu_count}vCPU / {p.ram}MB
-              </option>
+            {plans.map(p => (
+              <option key={p.id} value={p.id}>{p.id} - {p.vcpu_count}vCPU / {p.ram}MB</option>
             ))}
           </select>
 
           <select name="os_id" onChange={handleChange} value={form.os_id} className="p-2 border rounded w-48">
             <option value="">OS 선택</option>
-            {oses.map((o) => (
+            {oses.map(o => (
               <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </select>

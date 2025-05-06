@@ -4,5 +4,13 @@ const nextConfig = {
     reactStrictMode: true,
   }
   
-  module.exports = nextConfig
-  
+  module.exports = {
+    webpack: (config) => {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: require.resolve('crypto-browserify'),
+        buffer: require.resolve('buffer'),
+      }
+      return config
+    },
+  }

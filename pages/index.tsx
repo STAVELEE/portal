@@ -26,7 +26,7 @@ export default function ServerList() {
         let updated = data.instances || []
 
         const newLabel = localStorage.getItem('creating_label')
-        if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
+        if (newLabel && !updated.some((i: any) => i.label === newLabel)) {
           updated = [
             {
               id: 'creating-' + Date.now(),
@@ -62,7 +62,7 @@ export default function ServerList() {
           </a>
         </div>
 
-        <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>
+        <h1 className="text-3xl font-bold text-blue-700 mb-6">💻 서버 목록</h1>
 
         {loading ? (
           <p className="text-gray-600">로딩 중...</p>
