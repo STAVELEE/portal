@@ -1,3 +1,4 @@
+// pages/api/vultr/instance.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
@@ -6,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { id } = req.query;
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 없습니다.' });
+    return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 설정되지 않았습니다.' });
   }
 
   if (!id || typeof id !== 'string') {
