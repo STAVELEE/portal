@@ -24,7 +24,6 @@ export default function ServerList() {
         if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패')
 
         let updated = data.instances || []
-
         const newLabel = localStorage.getItem('creating_label')
         if (newLabel && !updated.some((i: any) => i.label === newLabel)) {
           updated = [
@@ -61,9 +60,7 @@ export default function ServerList() {
             ➕ 새 서버 생성
           </a>
         </div>
-
-        <h1 className="text-3xl font-bold text-blue-700 mb-6">💻 서버 목록</h1>
-
+        <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>
         {loading ? (
           <p className="text-gray-600">로딩 중...</p>
         ) : error ? (
@@ -81,11 +78,7 @@ export default function ServerList() {
             </thead>
             <tbody>
               {instances.map((ins) => (
-                <tr
-                  key={ins.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => router.push(`/servers/${ins.id}`)}
-                >
+                <tr key={ins.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/servers/${ins.id}`)}>
                   <td className="p-2 border">{ins.label}</td>
                   <td className="p-2 border">{ins.main_ip}</td>
                   <td className="p-2 border">{ins.region}</td>

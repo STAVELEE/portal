@@ -1,3 +1,4 @@
+// ✅ pages/servers/create.tsx
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import filterPlansByRegion from '@/utils/filterPlansByRegion'
@@ -38,53 +39,27 @@ export default function CreateServer() {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const downloadKeyPair = (privateKey: string, publicKey: string) => {
-    const blob = new Blob([privateKey], { type: 'application/x-pem-file' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${form.label || 'server'}-private-key.pem`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
   const handleCreate = async () => {
     setLoading(true)
     setError('')
-    const label = form.label.trim() || `server-${Math.floor(1000 + Math.random() * 9000)}`
+
+    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
     localStorage.setItem('creating_label', label)
 
-    try {
-      // 🔐 키페어 생성
-      const keyRes = await fetch('/api/keys/generate', { method: 'POST' })
-      const keyData = await keyRes.json()
-      if (!keyRes.ok) throw new Error(keyData?.error || '키페어 생성 실패')
+    const res = await fetch('/api/server/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, label }),
+    })
 
-      const { privateKey, publicKey } = keyData
-      downloadKeyPair(privateKey, publicKey)
-
-      // 서버 생성
-      const res = await fetch('/api/server/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, label, sshkey: publicKey }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data?.error || '서버 생성 실패')
-        setLoading(false)
-        return
-      }
-
-      router.push('/')
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data?.error || '서버 생성 실패')
       setLoading(false)
+      return
     }
+
+    router.push('/')
   }
 
   return (
