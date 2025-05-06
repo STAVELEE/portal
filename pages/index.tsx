@@ -29,7 +29,7 @@ export default function ServerList() {
         if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
           updated = [
             {
-              id: 'creating-' + Date.now(),
+              id: '', // 가짜 ID: 클릭 방지용
               label: newLabel,
               main_ip: '할당 중',
               region: '',
@@ -82,9 +82,11 @@ export default function ServerList() {
             <tbody>
               {instances.map((ins) => (
                 <tr
-                  key={ins.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => router.push(`/servers/${ins.id}`)}
+                  key={ins.id || ins.label} // fallback to label for mock rows
+                  className={`hover:bg-gray-50 ${ins.id ? 'cursor-pointer' : 'opacity-50'}`}
+                  onClick={() => {
+                    if (ins.id) router.push(`/servers/${ins.id}`)
+                  }}
                 >
                   <td className="p-2 border">{ins.label}</td>
                   <td className="p-2 border">{ins.main_ip}</td>
