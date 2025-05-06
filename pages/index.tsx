@@ -1,31 +1,31 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 
 interface Instance {
-  id: string;
-  label: string;
-  main_ip: string;
-  region: string;
-  os: string;
-  status: string;
+  id: string
+  label: string
+  main_ip: string
+  region: string
+  os: string
+  status: string
 }
 
 export default function ServerList() {
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [instances, setInstances] = useState<Instance[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     const fetchInstances = async () => {
       try {
-        const res = await fetch('/api/vultr/instances');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
+        const res = await fetch('/api/vultr/instances')
+        const data = await res.json()
+        if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패')
 
-        let updated = data.instances || [];
+        let updated = data.instances || []
 
-        const newLabel = localStorage.getItem('creating_label');
+        const newLabel = localStorage.getItem('creating_label')
         if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
           updated = [
             {
@@ -37,21 +37,21 @@ export default function ServerList() {
               status: '세팅 중',
             },
             ...updated,
-          ];
+          ]
         }
 
-        setInstances(updated);
+        setInstances(updated)
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchInstances();
-    const interval = setInterval(fetchInstances, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchInstances()
+    const interval = setInterval(fetchInstances, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -98,5 +98,5 @@ export default function ServerList() {
         )}
       </div>
     </div>
-  );
+  )
 }
