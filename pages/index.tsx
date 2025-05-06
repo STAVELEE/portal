@@ -1,3 +1,4 @@
+// ✅ pages/index.tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
@@ -22,8 +23,9 @@ export default function ServerList() {
         const res = await fetch('/api/vultr/instances');
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
-        const localLabel = localStorage.getItem('creatingLabel');
+
         let updated = data.instances || [];
+        const localLabel = localStorage.getItem('creatingLabel');
 
         if (localLabel && !updated.some((i: Instance) => i.label === localLabel)) {
           updated = [
@@ -37,6 +39,8 @@ export default function ServerList() {
             },
             ...updated,
           ];
+        } else {
+          localStorage.removeItem('creatingLabel');
         }
 
         setInstances(updated);
@@ -60,13 +64,12 @@ export default function ServerList() {
             ➕ 새 서버 생성
           </a>
         </div>
-
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🖥️ 서버 목록</h1>
 
         {loading ? (
           <p className="text-gray-600">로딩 중...</p>
         ) : error ? (
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600">❌ {error}</p>
         ) : (
           <table className="min-w-full text-sm text-left border bg-white rounded shadow">
             <thead className="bg-gray-200">
@@ -82,15 +85,11 @@ export default function ServerList() {
               {instances.map((ins) => (
                 <tr
                   key={ins.id}
-                  className={`hover:bg-gray-50 ${ins.id.startsWith('creating-') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  onClick={() => {
-                    if (!ins.id.startsWith('creating-')) {
-                      router.push(`/servers/${ins.id}`);
-                    }
-                  }}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => router.push(`/servers/${ins.id}`)}
                 >
                   <td className="p-2 border">{ins.label}</td>
-                  <td className="p-2 border">{ins.main_ip}</td>
+                  <td className="p-2 border">{ins.main_ip || '-'}</td>
                   <td className="p-2 border">{ins.region}</td>
                   <td className="p-2 border">{ins.os}</td>
                   <td className="p-2 border">{ins.status}</td>
