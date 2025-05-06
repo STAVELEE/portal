@@ -27,11 +27,12 @@ export default function ServerDetail() {
   }
 
   useEffect(() => {
-    if (!id) return
-    fetchServer()
-    const interval = setInterval(fetchServer, 5000)
-    return () => clearInterval(interval)
-  }, [id])
+    if (!router.isReady || !id) return;
+    fetchServer();
+    const interval = setInterval(fetchServer, 5000);
+    return () => clearInterval(interval);
+  }, [router.isReady, id]);
+  
 
   if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>
   if (error) return <p className="p-4 text-red-500">❌ {error}</p>
