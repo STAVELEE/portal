@@ -1,72 +1,70 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import filterPlansByRegion from '@/utils/filterPlansByRegion';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import filterPlansByRegion from '@/utils/filterPlansByRegion'
 
 export default function CreateServer() {
-  const [regions, setRegions] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [oses, setOses] = useState<any[]>([]);
-  const [type, setType] = useState('');
-  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const router = useRouter();
+  const [regions, setRegions] = useState<any[]>([])
+  const [plans, setPlans] = useState<any[]>([])
+  const [oses, setOses] = useState<any[]>([])
+  const [type, setType] = useState('')
+  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     const loadInitial = async () => {
       const [r, o] = await Promise.all([
         fetch('/api/vultr/regions').then(res => res.json()),
         fetch('/api/vultr/os').then(res => res.json())
-      ]);
-      setRegions(r.regions || []);
-      setOses(o.os || []);
-    };
-    loadInitial();
-  }, []);
+      ])
+      setRegions(r.regions || [])
+      setOses(o.os || [])
+    }
+    loadInitial()
+  }, [])
 
   useEffect(() => {
-    if (!type || !form.region) return;
+    if (!type || !form.region) return
     const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans?type=${type}`);
-      const data = await res.json();
-      setPlans(filterPlansByRegion(data.plans || [], form.region));
-    };
-    fetchPlans();
-  }, [type, form.region]);
+      const res = await fetch(`/api/vultr/plans?type=${type}`)
+      const data = await res.json()
+      setPlans(filterPlansByRegion(data.plans || [], form.region))
+    }
+    fetchPlans()
+  }, [type, form.region])
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   const handleCreate = async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true)
+    setError('')
 
-    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`;
-    localStorage.setItem('creating_label', label);
+    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    localStorage.setItem('creating_label', label)
 
     const res = await fetch('/api/server/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, label }),
-    });
+    })
 
-    const data = await res.json();
+    const data = await res.json()
     if (!res.ok) {
-      setError(data?.error || '서버 생성 실패');
-      setLoading(false);
-      return;
+      setError(data?.error || '서버 생성 실패')
+      setLoading(false)
+      return
     }
 
-    router.push('/');
-  };
+    router.push('/')
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold text-blue-700 mb-6">🚀 서버 생성</h1>
-
         <div className="flex flex-wrap gap-4 mb-4">
           <select name="region" onChange={handleChange} value={form.region} className="p-2 border rounded w-48">
             <option value="">리전 선택</option>
@@ -116,5 +114,5 @@ export default function CreateServer() {
         {error && <p className="text-red-600 mt-2">{error}</p>}
       </div>
     </div>
-  );
+  )
 }
