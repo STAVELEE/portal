@@ -26,7 +26,7 @@ export default function ServerList() {
         let updated = data.instances || [];
 
         const newLabel = localStorage.getItem('creating_label');
-        if (newLabel && !updated.some(i => i.label === newLabel)) {
+        if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
           updated = [
             {
               id: 'creating-' + Date.now(),
