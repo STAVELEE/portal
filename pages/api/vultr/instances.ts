@@ -1,4 +1,3 @@
-// ✅ pages/api/vultr/instance.ts (정확한 고친 버전)
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
@@ -26,11 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const ins = response.data?.instance;
-
-    if (!ins) {
-      return res.status(404).json({ error: '인스턴스를 찾을 수 없습니다.', detail: response.data });
-    }
+    const ins = response.data.instance;
 
     const instance = {
       id: ins.id,
@@ -49,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ instance });
   } catch (error: any) {
     console.error('🔴 인스턴스 조회 실패:', error.response?.data || error.message);
-    return res.status(500).json({ error: '인스턴스 조회 실패', detail: error.response?.data || error.message });
+    return res.status(500).json({ error: '조회 실패', detail: error.response?.data || error.message });
   }
 }
 
