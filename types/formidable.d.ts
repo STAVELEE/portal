@@ -1,5 +1,2 @@
-declare module 'formidable' {
-    import * as formidable from 'formidable';
-    export = formidable;
-  }
-  
+// types/formidable.d.ts
+declare module 'formidable';
