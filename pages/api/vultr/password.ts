@@ -1,10 +1,11 @@
 // pages/api/vultr/password.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
+
+// @ts-ignore - formidable 타입 무시
 import formidable from 'formidable';
 import fs from 'fs/promises';
 import path from 'path';
 import { decryptWithPrivateKey } from '@/utils/cryptoUtils';
-import axios from 'axios';
 
 export const config = {
   api: {
@@ -13,38 +14,42 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const apiKey = process.env.VULTR_API_KEY;
-  const { id } = req.query;
-
-  if (!apiKey) return res.status(500).json({ error: 'VULTR_API_KEY 미설정' });
-  if (!id || typeof id !== 'string') return res.status(400).json({ error: '유효한 서버 ID가 필요합니다.' });
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST 요청만 허용됩니다.' });
-
-  try {
-    const form = new formidable.IncomingForm();
-    const [fields, files] = await form.parse(req);
-    const pemFile = files.pem?.[0];
-
-    if (!pemFile || !pemFile.filepath) return res.status(400).json({ error: 'PEM 키 파일이 필요합니다.' });
-
-    const pemContent = await fs.readFile(pemFile.filepath, 'utf8');
-
-    const response = await axios.get(`https://api.vultr.com/v2/instances/${id}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const encrypted = response.data?.instance?.default_password;
-
-    if (!encrypted) return res.status(404).json({ error: '암호화된 비밀번호가 없습니다.' });
-
-    // 복호화 시도
-    const decrypted = await decryptWithPrivateKey(encrypted, pemContent);
-    return res.status(200).json({ password: decrypted });
-  } catch (err: any) {
-    console.error('🔑 비밀번호 복호화 실패:', err.message);
-    return res.status(500).json({ error: '복호화 실패', detail: err.message });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: '허용되지 않은 메서드입니다. POST만 가능' });
   }
+
+  const form = new formidable.IncomingForm();
+
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      console.error('formidable 파싱 오류:', err);
+      return res.status(500).json({ error: '파일 파싱 실패' });
+    }
+
+    const instanceId = fields.id?.[0];
+    if (!instanceId) {
+      return res.status(400).json({ error: '서버 ID 누락' });
+    }
+
+    const file = files.privateKey?.[0];
+    if (!file) {
+      return res.status(400).json({ error: '키 파일 누락' });
+    }
+
+    try {
+      const keyContent = await fs.readFile(file.filepath, 'utf-8');
+      const encryptedRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/vultr/instance?id=${instanceId}`);
+      const encryptedData = await encryptedRes.json();
+
+      if (!encryptedRes.ok) {
+        return res.status(500).json({ error: '서버 데이터 조회 실패' });
+      }
+
+      const decrypted = decryptWithPrivateKey(encryptedData.instance.default_password, keyContent);
+      return res.status(200).json({ password: decrypted });
+    } catch (error: any) {
+      console.error('복호화 오류:', error);
+      return res.status(500).json({ error: '비밀번호 복호화 실패' });
+    }
+  });
 }
