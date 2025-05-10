@@ -1,35 +1,30 @@
 // lib/sendMail.ts
-import nodemailer from 'nodemailer'
+import nodemailer from 'nodemailer';
 
-interface EmailParams {
-  to: string
-  label: string
-  ip: string
-  password: string
-}
+const transporter = nodemailer.createTransport({
+  host: 'outbound.daouoffice.com', // 다우오피스 SMTP 호스트 (메일플러그 사용)
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.MAIL_USER,        // 예: noreply@yourdomain.com
+    pass: process.env.MAIL_PASS         // 앱 비밀번호 또는 계정 비밀번호
+  }
+});
 
-export async function sendServerInfoEmail({ to, label, ip, password }: EmailParams) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-
-  await transporter.sendMail({
-    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDR}>`,
+export async function sendServerInfoEmail(to: string, { label, ip, password }: { label: string, ip: string, password: string }) {
+  const info = await transporter.sendMail({
+    from: `"NEBULAX" <${process.env.MAIL_USER}>`,
     to,
-    subject: `[서버 생성 완료] ${label}`,
+    subject: `서버 "${label}" 정보`,
     html: `
-      <h3>✅ 서버가 성공적으로 생성되었습니다</h3>
+      <h2>서버가 성공적으로 생성되었습니다.</h2>
       <ul>
         <li><strong>이름:</strong> ${label}</li>
-        <li><strong>IP:</strong> ${ip}</li>
+        <li><strong>IP 주소:</strong> ${ip}</li>
         <li><strong>비밀번호:</strong> ${password}</li>
       </ul>
-    `,
-  })
+    `
+  });
+
+  console.log('메일 전송 완료:', info.messageId);
 }
