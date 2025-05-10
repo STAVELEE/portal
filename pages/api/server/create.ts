@@ -30,11 +30,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const instance = response.data.instance
 
     // ✅ 메일 발송 - 수신 이메일 주소는 사용자 인증이 있다면 사용자의 이메일로
-    await sendServerInfoEmail('user@example.com', {
-      label: instance.label,
-      ip: instance.main_ip || '할당 중',
-      password: instance.default_password || '(확인 불가)',
-    })
+    await sendServerInfoEmail('stave@nebulax.digital', {
+  label: instance.label,
+  ip: instance.main_ip || '할당 중',
+  password: instance.default_password || '(확인 불가)',
+})
+
 
     return res.status(200).json({ instance })
   } catch (err: any) {
