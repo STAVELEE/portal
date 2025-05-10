@@ -1,36 +1,49 @@
-// pages/api/auth/[...nextauth].ts
-import NextAuth from 'next-auth'
-import GoogleProvider from 'next-auth/providers/google'
-import GithubProvider from 'next-auth/providers/github'
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import GithubProvider from 'next-auth/providers/github';
+import GoogleProvider from 'next-auth/providers/google';
+import { FirestoreAdapter } from '@auth/firebase-adapter';
+import { cert } from 'firebase-admin/app';
 
-export default NextAuth({
+// Firebase 서비스 계정 키 설정
+const serviceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
+
+export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     GithubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
+  adapter: FirestoreAdapter({
+    credential: cert(serviceAccount),
+  }),
   callbacks: {
     async session({ session, token }) {
       if (token) {
-        session.id = token.id
-        session.provider = token.provider
+        (session as any).id = token.sub;
+        (session as any).provider = token.provider;
       }
-      return session
+      return session;
     },
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account }) {
       if (account) {
-        token.id = profile?.email
-        token.provider = account.provider
+        token.provider = account.provider;
       }
-      return token
+      return token;
     },
   },
-  pages: {
-    signIn: '/auth/signin',  // Optional custom UI
+  session: {
+    strategy: 'jwt',
   },
-})
+  secret: process.env.NEXTAUTH_SECRET,
+};
+
+export default NextAuth(authOptions);

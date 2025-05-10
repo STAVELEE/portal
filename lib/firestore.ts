@@ -1,16 +1,18 @@
-// lib/firestore.ts
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { getFirestore } from 'firebase-admin/firestore'
+import { getApp, getApps, initializeApp, cert } from 'firebase-admin/app'
 
-export async function saveInstanceToFirestore(userId: string, instance: any) {
-  const ref = collection(db, 'users', userId, 'instances');
-  await addDoc(ref, {
-    id: instance.id,
-    label: instance.label,
-    region: instance.region,
-    os: instance.os,
-    main_ip: instance.main_ip,
-    status: instance.status,
-    created_at: new Date().toISOString(),
-  });
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string)
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount),
+  })
+}
+
+const db = getFirestore()
+
+export async function saveInstanceToFirestore(userEmail: string, instance: any) {
+  const userRef = db.collection('users').doc(userEmail)
+  const instancesRef = userRef.collection('instances')
+  await instancesRef.doc(instance.id).set(instance)
 }
