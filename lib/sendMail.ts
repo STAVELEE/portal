@@ -1,16 +1,17 @@
+// lib/sendMail.ts
 import nodemailer from 'nodemailer'
 
-interface MailInfo {
+interface EmailParams {
   to: string
   label: string
   ip: string
   password: string
 }
 
-export async function sendServerInfoEmail({ to, label, ip, password }: MailInfo) {
+export async function sendServerInfoEmail({ to, label, ip, password }: EmailParams) {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 25),
+    port: Number(process.env.SMTP_PORT || 465),
     secure: false,
     auth: {
       user: process.env.SMTP_USER,
@@ -23,10 +24,12 @@ export async function sendServerInfoEmail({ to, label, ip, password }: MailInfo)
     to,
     subject: `[서버 생성 완료] ${label}`,
     html: `
-      <h3>🚀 서버가 성공적으로 생성되었습니다.</h3>
-      <p><strong>서버명:</strong> ${label}</p>
-      <p><strong>IP 주소:</strong> ${ip}</p>
-      <p><strong>루트 비밀번호:</strong> ${password}</p>
+      <h3>✅ 서버가 성공적으로 생성되었습니다</h3>
+      <ul>
+        <li><strong>이름:</strong> ${label}</li>
+        <li><strong>IP:</strong> ${ip}</li>
+        <li><strong>비밀번호:</strong> ${password}</li>
+      </ul>
     `,
   })
 }
