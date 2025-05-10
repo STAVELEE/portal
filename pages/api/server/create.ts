@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
-import { getServerSession } from 'next-auth/next'
+import type { Session } from 'next-auth'
 import authOptions from '../auth/[...nextauth]'
 import { saveInstanceToFirestore } from '@/lib/firestore'
 import { sendServerInfoEmail } from '@/lib/sendMail'
@@ -15,12 +15,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 설정되지 않았습니다.' })
   }
 
-  const session = await getServerSession(req, res, authOptions)
+const session = await getServerSession(req, res, authOptions) as Session
 
-  if (!session || !session.user?.email) {
-    return res.status(401).json({ error: '인증이 필요합니다.' })
-  }
-
+if (!session || !session.user?.email) {
+  return res.status(401).json({ error: '인증이 필요합니다.' })
+}
   const { region, plan, os_id, label, sshkey_id } = req.body
 
   if (!region || !plan || !os_id) {
