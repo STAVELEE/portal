@@ -1,58 +1,40 @@
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 
 export default function ServerDetail() {
-  const router = useRouter();
-  const { id } = router.query;
+  const router = useRouter()
+  const { id } = router.query
 
-  const [server, setServer] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [password, setPassword] = useState('');
-  const [pemFile, setPemFile] = useState<File | null>(null);
+  const [server, setServer] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchServer = async () => {
+    if (!id || typeof id !== 'string') return
+
+    try {
+      const res = await fetch(`/api/vultr/instance?id=${id}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || '정보 조회 실패')
+      setServer(data.instance)
+      setError('')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (!id) return;
-    const fetchServer = async () => {
-      try {
-        const res = await fetch(`/api/vultr/instance?id=${id}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || '정보 조회 실패');
-        setServer(data.instance);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!id) return
+    fetchServer()
+    const interval = setInterval(fetchServer, 5000)
+    return () => clearInterval(interval)
+  }, [id])
 
-    fetchServer();
-  }, [id]);
-
-  const handlePemUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-    setPemFile(file);
-
-    const formData = new FormData();
-    formData.append('pem', file);
-
-    const res = await fetch(`/api/vultr/password?id=${id}`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      setPassword(data.password);
-    } else {
-      setError(data.error || '비밀번호 복호화 실패');
-    }
-  };
-
-  if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>;
-  if (error) return <p className="p-4 text-red-500">❌ {error}</p>;
-  if (!server) return <p className="p-4">❌ 서버 정보를 찾을 수 없습니다.</p>;
+  if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>
+  if (error) return <p className="p-4 text-red-500">❌ {error}</p>
+  if (!server) return <p className="p-4">❌ 서버 정보를 찾을 수 없습니다.</p>
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
@@ -70,22 +52,10 @@ export default function ServerDetail() {
             <tr><td className="font-semibold p-2 border">RAM</td><td className="p-2 border">{server.ram} MB</td></tr>
             <tr><td className="font-semibold p-2 border">디스크</td><td className="p-2 border">{server.disk}</td></tr>
             <tr><td className="font-semibold p-2 border">생성일</td><td className="p-2 border">{server.date_created}</td></tr>
-            <tr>
-              <td className="font-semibold p-2 border">🔐 루트 비밀번호</td>
-              <td className="p-2 border">
-                {password ? (
-                  <span className="font-mono">{password}</span>
-                ) : (
-                  <div>
-                    <input type="file" accept=".pem" onChange={handlePemUpload} className="mb-2" />
-                    {pemFile && <p className="text-sm text-gray-600">🔑 PEM 파일을 업로드하면 복호화됩니다.</p>}
-                  </div>
-                )}
-              </td>
-            </tr>
+            <tr><td className="font-semibold p-2 border">루트 비밀번호</td><td className="p-2 border">{server.default_password || '확인 불가'}</td></tr>
           </tbody>
         </table>
       </div>
     </div>
-  );
+  )
 }

@@ -1,81 +1,66 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import filterPlansByRegion from '@/utils/filterPlansByRegion';
-import { generateKeyPair } from '@/utils/cryptoUtils';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import filterPlansByRegion from '@/utils/filterPlansByRegion'
 
 export default function CreateServer() {
-  const [regions, setRegions] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [oses, setOses] = useState<any[]>([]);
-  const [type, setType] = useState('');
-  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [regions, setRegions] = useState<any[]>([])
+  const [plans, setPlans] = useState<any[]>([])
+  const [oses, setOses] = useState<any[]>([])
+  const [type, setType] = useState('')
+  const [form, setForm] = useState({ region: '', plan: '', os_id: '', label: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const router = useRouter()
 
   useEffect(() => {
     const loadInitial = async () => {
       const [r, o] = await Promise.all([
         fetch('/api/vultr/regions').then(res => res.json()),
-        fetch('/api/vultr/os').then(res => res.json()),
-      ]);
-      setRegions(r.regions || []);
-      setOses(o.os || []);
-    };
-    loadInitial();
-  }, []);
+        fetch('/api/vultr/os').then(res => res.json())
+      ])
+      setRegions(r.regions || [])
+      setOses(o.os || [])
+    }
+    loadInitial()
+  }, [])
 
   useEffect(() => {
-    if (!type || !form.region) return;
+    if (!type || !form.region) return
     const fetchPlans = async () => {
-      const res = await fetch(`/api/vultr/plans?type=${type}`);
-      const data = await res.json();
-      setPlans(filterPlansByRegion(data.plans || [], form.region));
-    };
-    fetchPlans();
-  }, [type, form.region]);
+      const res = await fetch(`/api/vultr/plans?type=${type}`)
+      const data = await res.json()
+      setPlans(filterPlansByRegion(data.plans || [], form.region))
+    }
+    fetchPlans()
+  }, [type, form.region])
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   const handleCreate = async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true)
+    setError('')
 
-    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`;
-    localStorage.setItem('creating_label', label);
+    const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`
+    localStorage.setItem('creating_label', label)
 
-    try {
-      // 🔐 키페어 생성
-      const { publicKeyPem, privateKeyPem } = await generateKeyPair();
+    const res = await fetch('/api/server/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, label }),
+    })
 
-      // 💾 사용자에게 .pem 파일 다운로드 제공
-      const blob = new Blob([privateKeyPem], { type: 'application/x-pem-file' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${label}.pem`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      const res = await fetch('/api/server/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, label, ssh_key: publicKeyPem }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || '서버 생성 실패');
-
-      router.push('/');
-    } catch (err: any) {
-      setError(err.message || '서버 생성 중 오류 발생');
-    } finally {
-      setLoading(false);
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data?.error || '서버 생성 실패')
+      setLoading(false)
+      return
     }
-  };
+
+    router.push('/')
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -131,5 +116,5 @@ export default function CreateServer() {
         {error && <p className="text-red-600 mt-2">{error}</p>}
       </div>
     </div>
-  );
+  )
 }

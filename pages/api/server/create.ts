@@ -1,36 +1,24 @@
-// ✅ /pages/api/server/create.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
+import { sendServerInfoEmail } from '@/lib/sendMail'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'POST 요청만 허용됩니다.' })
-  }
+  if (req.method !== 'POST') return res.status(405).end()
 
   const apiKey = process.env.VULTR_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 설정되지 않았습니다.' })
-  }
+  const { region, plan, os_id, label } = req.body
 
-  const { region, plan, os_id, label, sshkey_id } = req.body
-
-  if (!region || !plan || !os_id) {
-    return res.status(400).json({ error: 'region, plan, os_id는 필수입니다.' })
-  }
+  if (!apiKey) return res.status(500).json({ error: 'API Key 없음' })
 
   try {
-    const payload: Record<string, any> = {
-      region,
-      plan,
-      os_id,
-      label: label || `server-${Math.floor(Math.random() * 10000)}`,
-    }
-
-    if (sshkey_id) payload.sshkey_id = sshkey_id
-
     const response = await axios.post(
       'https://api.vultr.com/v2/instances',
-      payload,
+      {
+        region,
+        plan,
+        os_id,
+        label,
+      },
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -39,9 +27,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     )
 
-    return res.status(200).json({ instance: response.data.instance })
-  } catch (error: any) {
-    console.error('🔴 서버 생성 실패:', error.response?.data || error.message)
-    return res.status(500).json({ error: '서버 생성 실패', detail: error.response?.data || error.message })
+    const instance = response.data.instance
+
+    // ✅ 메일 발송 - 수신 이메일 주소는 사용자 인증이 있다면 사용자의 이메일로
+    await sendServerInfoEmail('user@example.com', {
+      label: instance.label,
+      ip: instance.main_ip || '할당 중',
+      password: instance.default_password || '(확인 불가)',
+    })
+
+    return res.status(200).json({ instance })
+  } catch (err: any) {
+    console.error('🔴 서버 생성 실패:', err.response?.data || err.message)
+    return res.status(500).json({ error: '서버 생성 실패', detail: err.response?.data || err.message })
   }
 }

@@ -1,3 +1,4 @@
+// ✅ pages/index.tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
@@ -24,7 +25,6 @@ export default function ServerList() {
         if (!res.ok) throw new Error(data?.error || '서버 목록 조회 실패');
 
         let updated = data.instances || [];
-
         const newLabel = localStorage.getItem('creating_label');
         if (newLabel && !updated.some((i: Instance) => i.label === newLabel)) {
           updated = [
