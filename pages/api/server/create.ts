@@ -1,7 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import { NextApiRequest, NextApiResponse } from 'next';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 import axios from 'axios'
-import type { Session } from 'next-auth'
-import authOptions from '../auth/[...nextauth]'
 import { saveInstanceToFirestore } from '@/lib/firestore'
 import { sendServerInfoEmail } from '@/lib/sendMail'
 
@@ -10,16 +10,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'POST 요청만 허용됩니다.' })
   }
 
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user?.email) {
+    return res.status(401).json({ error: '인증이 필요합니다.' });
+  }
+
   const apiKey = process.env.VULTR_API_KEY
   if (!apiKey) {
     return res.status(500).json({ error: 'VULTR_API_KEY 환경변수가 설정되지 않았습니다.' })
   }
 
-const session = await getServerSession(req, res, authOptions) as Session
-
-if (!session || !session.user?.email) {
-  return res.status(401).json({ error: '인증이 필요합니다.' })
-}
   const { region, plan, os_id, label, sshkey_id } = req.body
 
   if (!region || !plan || !os_id) {
@@ -49,18 +50,10 @@ if (!session || !session.user?.email) {
 
     const instance = response.data.instance
 
-    // ✅ Firestore 저장
-    await saveInstanceToFirestore(session.user.email, {
-      id: instance.id,
-      label: instance.label,
-      region: instance.region,
-      os: instance.os,
-      main_ip: instance.main_ip,
-      status: instance.status,
-      created: new Date().toISOString(),
-    })
+    // Firestore 저장
+    await saveInstanceToFirestore(session.user.email, instance)
 
-    // ✅ 메일 발송
+    // 메일 발송
     await sendServerInfoEmail(session.user.email, {
       label: instance.label,
       ip: instance.main_ip || '할당 중',
