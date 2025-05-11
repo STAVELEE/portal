@@ -1,5 +1,3 @@
-// lib/sendMail.ts
- 
 import nodemailer from 'nodemailer'
 
 export const sendServerInfoEmail = async (
@@ -17,7 +15,7 @@ export const sendServerInfoEmail = async (
   })
 
   const mailOptions = {
-    from: `"Vultr 포털" <${process.env.SMTP_USER}>`,
+    from: `"Vultr 포털" <${process.env.MAIL_USER}>`,
     to,
     subject: `[Vultr] 서버 정보 - ${info.label}`,
     html: `

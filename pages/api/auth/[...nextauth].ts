@@ -1,17 +1,15 @@
-import NextAuth, { NextAuthOptions, Session } from 'next-auth';
-import GithubProvider from 'next-auth/providers/github';
-import GoogleProvider from 'next-auth/providers/google';
-import { FirestoreAdapter } from '@auth/firebase-adapter';
-import { getServerSession } from "next-auth/next";
-import { cert } from 'firebase-admin/app';
+import NextAuth, { NextAuthOptions, Session } from 'next-auth'
+import GithubProvider from 'next-auth/providers/github'
+import GoogleProvider from 'next-auth/providers/google'
+import { FirestoreAdapter } from '@auth/firebase-adapter'
+import { cert } from 'firebase-admin/app'
 
 interface ExtendedSession extends Session {
-  id?: string;
-  provider?: string;
+  id?: string
+  provider?: string
 }
 
 export const authOptions: NextAuthOptions = {
-  
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
@@ -31,14 +29,14 @@ export const authOptions: NextAuthOptions = {
   }),
   callbacks: {
     async session({ session, token }) {
-      const extendedSession: ExtendedSession = session;
+      const extendedSession = session as ExtendedSession
       if (token) {
-        extendedSession.id = token.id as string;
-        extendedSession.provider = token.provider as string;
+        extendedSession.id = token.sub
+        extendedSession.provider = token.provider as string
       }
-      return extendedSession;
+      return extendedSession
     },
   },
-};
+}
 
-export default NextAuth(authOptions);
+export default NextAuth(authOptions)
