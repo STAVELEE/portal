@@ -1,14 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firestore'; // Firebase Admin SDK
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'GET 요청만 허용됩니다.' });
-  }
-
   const session = await getServerSession(req, res, authOptions);
 
   if (!session || !session.user?.email) {
@@ -16,18 +11,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const serversRef = collection(db, 'servers');
-    const q = query(serversRef, where('userEmail', '==', session.user.email));
-    const snapshot = await getDocs(q);
+    const serversRef = db.collection('servers');
+    const snapshot = await serversRef.where('userEmail', '==', session.user.email).get();
 
     const servers = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
 
     return res.status(200).json({ servers });
   } catch (error: any) {
-    console.error('🔴 서버 목록 불러오기 실패:', error.message);
-    return res.status(500).json({ error: '서버 목록 불러오기 실패', detail: error.message });
+    console.error('🔥 서버 목록 조회 실패:', error);
+    return res.status(500).json({ error: '서버 목록 조회 실패', detail: error.message });
   }
 }
