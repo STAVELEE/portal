@@ -26,8 +26,9 @@
   },
   "devDependencies": {
     "@types/formidable": "^3.0.0",
-    "typescript": "^5.0.0",
-    "@types/react": "^18.0.0",
-    "@types/node": "^18.0.0"
+  "@types/node": "^18.0.0",
+  "@types/react": "^18.0.0",
+  "@types/nodemailer": "^6.4.7",
+  "typescript": "^5.0.0"
   }
 }
