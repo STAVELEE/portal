@@ -1,3 +1,4 @@
+// ✅ /pages/api/vultr/instances.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import { getServerSession } from 'next-auth';
@@ -34,3 +35,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
+
