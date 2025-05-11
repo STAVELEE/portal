@@ -21,7 +21,7 @@ export default function CreateServer() {
     const loadInitial = async () => {
       const [r, o] = await Promise.all([
         fetch('/api/vultr/regions').then(res => res.json()),
-        fetch('/api/vultr/os').then(res => res.json())
+        fetch('/api/vultr/os').then(res => res.json()),
       ]);
       setRegions(r.regions || []);
       setOses(o.os || []);
@@ -55,32 +55,33 @@ export default function CreateServer() {
     const label = form.label.trim() || `nebulax-server-${Math.floor(1000 + Math.random() * 9000)}`;
     localStorage.setItem('creating_label', label);
 
-    const res = await fetch('/api/server/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, label }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data?.error || '서버 생성 실패');
-      setLoading(false);
-      return;
-    }
-
-    // ✅ Firebase에 저장
     try {
+      const res = await fetch('/api/server/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, label }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error || '서버 생성 실패');
+        setLoading(false);
+        return;
+      }
+
       const docRef = doc(db, 'users', session.user.email!, 'servers', data.instance.id);
       await setDoc(docRef, {
         ...data.instance,
         createdBy: session.user.email,
         createdAt: new Date().toISOString(),
       });
-    } catch (err) {
-      console.error('Firebase 저장 실패:', err);
-    }
 
-    router.push('/');
+      router.push('/');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

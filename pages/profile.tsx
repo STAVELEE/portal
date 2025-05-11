@@ -1,46 +1,31 @@
+// pages/profile.tsx
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import useSWR from 'swr';
+import Link from 'next/link';
+import axios from 'axios';
 
-export default function ProfileForm() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    birthday: '',
-  });
+const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
-  }, [status]);
+export default function ProfilePage() {
+  const { data: session } = useSession();
+  const { data, error } = useSWR('/api/vultr/instances', fetcher);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = async () => {
-    const res = await fetch('/api/user/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, email: session?.user?.email }),
-    });
-
-    if (res.ok) router.push('/');
-    else alert('정보 저장 실패');
-  };
+  if (!session) return <p className="p-6">로그인이 필요합니다.</p>;
+  if (error) return <p className="p-6">에러 발생: {error.message}</p>;
+  if (!data) return <p className="p-6">로딩 중...</p>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-6 rounded shadow w-96">
-        <h1 className="text-lg font-semibold mb-4">👤 사용자 정보 입력</h1>
-        <input type="text" name="name" onChange={handleChange} placeholder="이름" className="mb-2 p-2 w-full border rounded" />
-        <input type="text" name="phone" onChange={handleChange} placeholder="전화번호" className="mb-2 p-2 w-full border rounded" />
-        <input type="date" name="birthday" onChange={handleChange} placeholder="생년월일" className="mb-4 p-2 w-full border rounded" />
-        <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded w-full">
-          저장
-        </button>
-      </div>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">내 서버 목록</h1>
+      <ul>
+        {data.instances.map((inst: any) => (
+          <li key={inst.id} className="mb-2">
+            <Link href={`/servers/${inst.id}`} className="text-blue-600 underline">
+              {inst.label} - {inst.main_ip}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
