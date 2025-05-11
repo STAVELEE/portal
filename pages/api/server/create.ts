@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import axios from 'axios'
-import { saveInstanceToFirestore } from '@/lib/firestore'
+import { saveInstanceToFirestore } from '../lib/firestore'
 import { sendServerInfoEmail } from '@/lib/sendMail'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerSession(req, res, authOptions);
+  const session = await getServerSession(req, res, authOptions) as Session;
   if (!session || !session.user?.email) {
     return res.status(401).json({ error: '인증이 필요합니다.' });
   }
