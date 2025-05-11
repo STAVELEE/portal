@@ -1,17 +1,14 @@
 // ✅ /pages/api/vultr/instances.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
-import { getServerSession } from 'next-auth';
-import authOptions from '../auth/[...nextauth]';
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '../auth/[...nextauth]'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import type { Session } from 'next-auth' // ✅ 추가
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'GET 요청만 허용됩니다.' });
-  }
+  const session = await getServerSession(req, res, authOptions) as Session // ✅ 타입 단언 추가
 
-  const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) {
-    return res.status(401).json({ error: '인증이 필요합니다.' });
+    return res.status(401).json({ error: '인증이 필요합니다.' })
   }
 
   const apiKey = process.env.VULTR_API_KEY;
