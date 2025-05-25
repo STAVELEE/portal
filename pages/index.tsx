@@ -23,28 +23,31 @@ export default function ServerList() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    if (status !== 'authenticated' || !session?.user?.email) return;
+useEffect(() => {
+  if (status !== 'authenticated' || !session?.user?.email) return;
 
-    const fetchUserInstances = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'users', session.user.email, 'servers'));
-        const result: Instance[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Instance[];
+  const fetchUserInstances = async () => {
+    try {
+      const userEmail = session.user.email;
+      const snapshot = await getDocs(collection(db, 'users', userEmail, 'servers'));
 
-        setInstances(result);
-      } catch (err: any) {
-        console.error(err);
-        setError('서버 목록 조회 실패');
-      } finally {
-        setLoading(false);
-      }
-    };
+      const result: Instance[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Instance[];
 
-    fetchUserInstances();
-  }, [status, session]);
+      setInstances(result);
+    } catch (err: any) {
+      console.error(err);
+      setError('서버 목록 조회 실패');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUserInstances();
+}, [status, session]);
+
 
   if (status === 'unauthenticated') return <p className="p-4">로그인이 필요합니다.</p>;
 
