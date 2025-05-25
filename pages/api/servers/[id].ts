@@ -16,7 +16,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!docSnap.exists) return res.status(404).json({ error: 'Server not found' });
 
   const data = docSnap.data();
-  if (data.ownerId !== session.id) return res.status(403).json({ error: 'Permission denied' });
+  if (!data) return res.status(500).json({ error: 'Data parsing error' }); // ✅ 추가
+
+  if (data.ownerId !== session.id) {
+    return res.status(403).json({ error: 'Permission denied' });
+  }
 
   res.status(200).json(data);
 }
