@@ -16,15 +16,23 @@ export default function ServerDetail() {
   useEffect(() => {
     if (!id || status !== 'authenticated') return;
 
+    if (typeof id !== 'string') {
+      setError('잘못된 서버 ID입니다.');
+      setLoading(false);
+      return;
+    }
+
     if (!session?.user?.email) {
       setError('사용자 정보를 찾을 수 없습니다.');
       setLoading(false);
       return;
     }
 
+    const userEmail = session.user.email;
+
     const fetchServer = async () => {
       try {
-        const docRef = doc(db, 'users', session.user.email, 'servers', id as string);
+        const docRef = doc(db, 'users', userEmail, 'servers', id);
         const snapshot = await getDoc(docRef);
 
         if (!snapshot.exists()) {
