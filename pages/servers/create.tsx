@@ -44,10 +44,13 @@ export default function CreateServer() {
   };
 
   const handleCreate = async () => {
-    if (status !== 'authenticated') {
-      setError('로그인이 필요합니다.');
+    if (status !== 'authenticated' || !session?.user?.email) {
+      setError('로그인이 필요합니다 또는 사용자 이메일 정보를 찾을 수 없습니다.');
+      setLoading(false); // Also ensure loading is false if we return early
       return;
     }
+
+    const userEmail = session.user.email; // Guaranteed to be a string here
 
     setLoading(true);
     setError('');
@@ -69,10 +72,10 @@ export default function CreateServer() {
         return;
       }
 
-      const docRef = doc(db, 'users', session.user.email!, 'servers', data.instance.id);
+      const docRef = doc(db, 'users', userEmail, 'servers', data.instance.id);
       await setDoc(docRef, {
         ...data.instance,
-        createdBy: session.user.email,
+        createdBy: userEmail,
         createdAt: new Date().toISOString(),
       });
 

@@ -22,9 +22,11 @@ export default function ServerDetail() {
       return;
     }
 
+    const userEmail = session.user.email; // userEmail is now guaranteed to be a string
+
     const fetchServer = async () => {
       try {
-        const docRef = doc(db, 'users', session.user.email, 'servers', id as string);
+        const docRef = doc(db, 'users', userEmail, 'servers', id as string);
         const snapshot = await getDoc(docRef);
 
         if (!snapshot.exists()) {
