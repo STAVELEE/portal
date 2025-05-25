@@ -21,6 +21,12 @@ export default function ServerList() {
   const router = useRouter();
 
   useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
     if (status !== 'authenticated') return;
 
     const fetchUserInstances = async () => {
@@ -50,7 +56,12 @@ export default function ServerList() {
     }
   }, [status, session]); // Add session to the dependency array
 
-  if (status === 'unauthenticated') return <p className="p-4">로그인이 필요합니다.</p>;
+  if (status === 'loading') {
+    return <p className="p-4">Authenticating...</p>; // Or a global loading component
+  }
+
+  // The following line can be removed as redirection is handled by useEffect
+  // if (status === 'unauthenticated') return <p className="p-4">로그인이 필요합니다.</p>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
