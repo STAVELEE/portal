@@ -44,6 +44,7 @@ export default function CreateServer() {
   };
 
   const handleCreate = async () => {
+    // 1. 인증 상태 확인 (기존 코드 유지)
     if (status !== 'authenticated') {
       setError('로그인이 필요합니다.');
       return;
@@ -69,14 +70,24 @@ export default function CreateServer() {
         return;
       }
 
-      const docRef = doc(db, 'users', session.user.email!, 'servers', data.instance.id);
-      await setDoc(docRef, {
-        ...data.instance,
-        createdBy: session.user.email,
-        createdAt: new Date().toISOString(),
-      });
+      // 2. Firestore 작업 전, session.user.email 유효성 명시적 확인 (핵심 수정)
+      if (session && session.user && typeof session.user.email === 'string') {
+        const userEmail = session.user.email; // 이제 userEmail은 확실한 문자열 타입입니다.
 
-      router.push('/');
+        const docRef = doc(db, 'users', userEmail, 'servers', data.instance.id);
+        await setDoc(docRef, {
+          ...data.instance,
+          createdBy: userEmail, // `!` 없이 사용
+          createdAt: new Date().toISOString(),
+        });
+
+        router.push('/');
+      } else {
+        // 이 경우는 status === 'authenticated' 임에도 session.user.email이 유효하지 않은 예외적인 상황입니다.
+        // 타입스크립트 만족 및 안전장치 역할을 합니다.
+        setError('사용자 이메일 정보를 찾을 수 없습니다. 다시 로그인 후 시도해주세요.');
+        console.error('Authentication status is authenticated, but session.user.email is not a valid string.');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
