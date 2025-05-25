@@ -41,7 +41,7 @@ export default function ServerDetail() {
     };
 
     fetchServer();
-  }, [id, status]);
+  }, [id, status, session]);
 
   if (status === 'unauthenticated') return <p className="p-4">로그인이 필요합니다.</p>;
   if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>;
