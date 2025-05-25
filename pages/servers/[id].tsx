@@ -1,8 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function ServerDetail() {
   const router = useRouter();
@@ -16,32 +14,22 @@ export default function ServerDetail() {
   useEffect(() => {
     if (!id || status !== 'authenticated') return;
 
-    if (!session?.user?.email) {
-      setError('사용자 정보를 찾을 수 없습니다.');
-      setLoading(false);
-      return;
-    }
-
     const fetchServer = async () => {
       try {
-        const docRef = doc(db, 'users', session.user.email, 'servers', id as string);
-        const snapshot = await getDoc(docRef);
-
-        if (!snapshot.exists()) {
-          setError('서버 정보를 찾을 수 없습니다.');
-        } else {
-          setServer(snapshot.data());
-        }
+        const res = await fetch(`/api/servers/${id}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '서버 조회 실패');
+        setServer(data);
       } catch (err: any) {
         console.error(err);
-        setError('서버 상세 조회 실패');
+        setError(err.message || '서버 상세 조회 실패');
       } finally {
         setLoading(false);
       }
     };
 
     fetchServer();
-  }, [id, status, session]);
+  }, [id, status]);
 
   if (status === 'unauthenticated') return <p className="p-4">로그인이 필요합니다.</p>;
   if (loading) return <p className="p-4">⏳ 서버 정보 불러오는 중...</p>;
