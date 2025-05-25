@@ -56,6 +56,12 @@ export default function CreateServer() {
     localStorage.setItem('creating_label', label);
 
     try {
+      if (!session || !session.user || !session.user.email) {
+        setError('User session not found or email is missing. Please try logging in again.');
+        setLoading(false); // Ensure loading state is reset
+        return;
+      }
+
       const res = await fetch('/api/server/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
