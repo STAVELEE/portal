@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 export default function ServerDetail() {
   const router = useRouter();
   const { id } = router.query;
+
   const sessionData = useSession();
   const session = sessionData?.data;
   const status = sessionData?.status;
@@ -18,15 +19,16 @@ export default function ServerDetail() {
   useEffect(() => {
     if (!id || status !== 'authenticated') return;
 
-    if (!session?.user?.email) {
-      setError('사용자 정보를 찾을 수 없습니다.');
-      setLoading(false);
-      return;
-    }
-
     const fetchServer = async () => {
+      if (!session?.user?.email) {
+        setError('사용자 정보를 찾을 수 없습니다.');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const docRef = doc(db, 'users', session.user.email, 'servers', id as string);
+        const userEmail = session.user.email;
+        const docRef = doc(db, 'users', userEmail, 'servers', id as string);
         const snapshot = await getDoc(docRef);
 
         if (!snapshot.exists()) {
