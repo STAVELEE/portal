@@ -15,7 +15,9 @@ export default function CreateServer() {
   const [error, setError] = useState('');
 
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
+  const status = sessionData?.status;
 
   useEffect(() => {
     const loadInitial = async () => {

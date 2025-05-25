@@ -14,23 +14,21 @@ interface Instance {
 }
 
 export default function ServerList() {
-  const { data: session, status } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
+  const status = sessionData?.status;
+
   const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    if (status !== 'authenticated') return;
+    if (status !== 'authenticated' || !session?.user?.email) return;
 
     const fetchUserInstances = async () => {
-      if (!session?.user?.email) {
-        setError('사용자 정보를 찾을 수 없습니다.');
-        setLoading(false);
-        return;
-      }
       try {
-        const snapshot = await getDocs(collection(db, 'users', session.user.email, 'servers')); // Non-null assertion ! can be removed if check is robust
+        const snapshot = await getDocs(collection(db, 'users', session.user.email, 'servers'));
         const result: Instance[] = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -45,10 +43,8 @@ export default function ServerList() {
       }
     };
 
-    if (session) { // Ensure session is loaded before calling
-        fetchUserInstances();
-    }
-  }, [status, session]); // Add session to the dependency array
+    fetchUserInstances();
+  }, [status, session]);
 
   if (status === 'unauthenticated') return <p className="p-4">로그인이 필요합니다.</p>;
 

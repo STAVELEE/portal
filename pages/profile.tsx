@@ -7,7 +7,8 @@ import axios from 'axios';
 const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
   const { data, error } = useSWR('/api/vultr/instances', fetcher);
 
   if (!session) return <p className="p-6">로그인이 필요합니다.</p>;
